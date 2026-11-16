@@ -1,0 +1,2005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Whisper Transcription Manager</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%236db3f2'/%3E%3Ctext x='16' y='23' font-size='20' text-anchor='middle' fill='white' font-family='sans-serif'%3E🎙%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/vendor/plyr/plyr.css?v={{ v }}">
+<link rel="stylesheet" href="/static/css/app.css?v={{ v }}">
+<link rel="stylesheet" href="/static/css/settings.css?v={{ v }}">
+<link rel="stylesheet" href="/static/css/searchview.css?v={{ v }}">
+<link rel="stylesheet" href="/static/css/find.css?v={{ v }}">
+<link rel="stylesheet" href="/static/css/statsview.css?v={{ v }}">
+<link rel="stylesheet" href="/static/css/setupguide.css?v={{ v }}">
+<link rel="stylesheet" href="/static/css/perfview.css?v={{ v }}">
+<link rel="stylesheet" href="/static/css/voices.css?v={{ v }}">
+<link rel="stylesheet" href="/static/css/export.css?v={{ v }}">
+<link rel="stylesheet" href="/static/css/clips.css?v={{ v }}">
+</head>
+<body>
+<!-- Icon sprite of the top bar: one monochrome set drawn in currentColor
+     (stroke geometry after Feather Icons, MIT), used as
+     <svg class="ui-ico"><use href="#i-…"/></svg>. -->
+<svg class="icon-sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-health" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+    <symbol id="i-eject" viewBox="0 0 24 24"><path d="M12 5l7 9H5z"/><path d="M5 19h14"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></symbol>
+    <symbol id="i-queue" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+    <symbol id="i-voices" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
+    <symbol id="i-bell-off" viewBox="0 0 24 24"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><path d="M1 1l22 22"/></symbol>
+    <symbol id="i-guide" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36z"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></symbol>
+    <!-- Settings pages, help and setup guide (Feather-style line icons) -->
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-drive" viewBox="0 0 24 24"><path d="M22 12H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><path d="M6 16h.01M10 16h.01"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v4M8 23h8"/></symbol>
+    <symbol id="i-captions" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 12h4M14 12h4M6 16h8M16 16h2"/></symbol>
+    <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+    <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></symbol>
+    <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/></symbol>
+    <symbol id="i-conversation" viewBox="0 0 24 24"><path d="M4 3h9a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H8l-3 3v-3H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M16 8h4a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-1v3l-3-3h-5a2 2 0 0 1-2-2v-2"/></symbol>
+    <symbol id="i-autoscan" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49M7.76 16.24a6 6 0 0 1 0-8.49M19.07 4.93a10 10 0 0 1 0 14.14M4.93 19.07a10 10 0 0 1 0-14.14"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></symbol>
+    <symbol id="i-tasks" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8M10 9H8"/></symbol>
+    <symbol id="i-server" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><path d="M6 6h.01M6 18h.01"/></symbol>
+    <symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></symbol>
+    <symbol id="i-tool" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 17v5"/><path d="M9 3h6l-1 6 4 4v2H6v-2l4-4z"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4z"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+    <!-- The voices workspace -->
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></symbol>
+    <symbol id="i-user-check" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M17 11l2 2 4-4"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></symbol>
+    <symbol id="i-scissors" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+</svg>
+
+<!-- Rail: the app's places, grouped by task (navigation rebuild). The
+     open place lights up; "Icons only" folds it to a strip. Pinned tabs and
+     places go between Find and System (shell.js). -->
+<nav class="rail" id="rail" aria-label="Places">
+    <button class="rail-item rail-add" data-place="add" onclick="Shell.go('add')" title="Add files: upload, or download from a link or playlist"><svg class="ui-ico"><use href="#i-upload"/></svg><span class="rail-label">Add</span></button>
+    <button class="rail-item" data-place="home" onclick="Shell.go('home')" title="Home: what is going on, and every place"><svg class="ui-ico"><use href="#i-home"/></svg><span class="rail-label">Home</span></button>
+    <div class="rail-head">Work</div>
+    <button class="rail-item" data-place="library" onclick="Shell.go('library')" title="Library: every folder with its numbers"><svg class="ui-ico"><use href="#i-folder"/></svg><span class="rail-label">Library</span></button>
+    <button class="rail-item" data-place="queue" onclick="Shell.go('queue')" title="Queue: transcriptions and AI jobs, running, waiting, failed"><svg class="ui-ico"><use href="#i-queue"/></svg><span class="rail-label">Queue</span><span class="rail-badge" id="railBadgeQueue" hidden></span></button>
+    <div class="rail-head">Find</div>
+    <button class="rail-item" data-place="find" onclick="Shell.go('find')" title="Find: describe a moment, or search what was said, seen or heard"><svg class="ui-ico"><use href="#i-sparkle"/></svg><span class="rail-label">Find</span></button>
+    <button class="rail-item" data-place="ask" onclick="Shell.go('ask')" title="Ask: a chat with the language model that searches the library"><svg class="ui-ico"><use href="#i-chat"/></svg><span class="rail-label">Ask</span></button>
+    <button class="rail-item" data-place="analyses" onclick="Shell.go('analyses')" title="Analyses: one task over many recordings"><svg class="ui-ico"><use href="#i-layers"/></svg><span class="rail-label">Analyses</span><span class="rail-badge" id="railBadgeAnalyses" hidden></span></button>
+    <button class="rail-item" data-place="voices" onclick="Shell.go('voices')" title="Voices: people, naming, the voice map, history, the voice dataset"><svg class="ui-ico"><use href="#i-voices"/></svg><span class="rail-label">Voices</span></button>
+    <div class="rail-pins" id="railPins"></div>
+    <div class="rail-head">System</div>
+    <button class="rail-item" data-place="machine" onclick="Shell.go('machine')" title="Machine: health, load, models and connections"><svg class="ui-ico"><use href="#i-health"/></svg><span class="rail-label">Machine</span><span class="rail-dot" id="railMachineDot"></span></button>
+    <button class="rail-item" data-place="settings" onclick="Shell.go('settings')" title="Settings"><svg class="ui-ico"><use href="#i-settings"/></svg><span class="rail-label">Settings</span></button>
+    <button class="rail-item" data-place="help" onclick="Shell.go('help')" title="Help & setup: where is what, how-tos, keys, setup"><svg class="ui-ico"><use href="#i-help"/></svg><span class="rail-label">Help &amp; setup</span></button>
+    <button class="rail-fold" id="railFold" onclick="Shell.fold()" title="Show icons only">« <span class="rail-label">Icons only</span></button>
+    <div hidden>
+        <div class="conn-indicator" id="connIndicator" title="Model connections — click for settings">
+            <span class="conn-pill" id="connLlm" onclick="openConnSettings('llm')">
+                <span class="conn-dot" id="connLlmDot"></span>LLM
+            </span>
+            <span class="conn-pill" id="connEmb" onclick="openConnSettings('embedding')">
+                <span class="conn-dot" id="connEmbDot"></span>Emb
+            </span>
+        </div>
+    </div>
+</nav>
+<div class="app-col">
+<!-- Top bar: the search, the live load, freeing VRAM and the done sound.
+     Everything else moved to the rail (places) and the folder bar. -->
+<div class="topbar">
+    <div class="global-search" id="globalSearchBox">
+        <svg class="gs-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input type="text" class="gs-trigger" id="globalSearch" placeholder="Search or go to …  ( / )" aria-controls="searchPanel" aria-autocomplete="list" autocomplete="off">
+        <!-- The big search in one click (Enter in the field does the same):
+             the typed words go along -->
+        <button type="button" class="gs-open" id="globalSearchOpen" onclick="openSearchView()" aria-label="Open Find"
+                title="Open Find — what was said, seen or heard, same audio, conversations, files (Enter does the same)"><svg class="ui-ico"><use href="#i-expand"/></svg></button>
+        <!-- The dropdown while typing (search.js): places to go to, the
+             recordings where it was said (one line each), and where Enter
+             goes. The filters (file name, speaker, folder) live in Find's
+             Text tab. -->
+        <div class="search-panel" id="searchPanel" role="listbox" aria-label="Search suggestions">
+            <div class="sp-results" id="spResults"></div>
+            <div class="sp-foot" id="spFoot"></div>
+        </div>
+    </div>
+    <div class="tb-group tb-system">
+        <div class="sys-load" id="sysLoad" onclick="Machine.open('load')" title="Live load — click for the history of the last days">
+            <span class="sl-item" id="slCpu"><span class="sl-label">CPU</span><span class="sl-bar"><span class="sl-fill"></span></span><span class="sl-val">–</span></span>
+            <span class="sl-item" id="slRam"><span class="sl-label">RAM</span><span class="sl-bar"><span class="sl-fill"></span></span><span class="sl-val">–</span></span>
+            <span class="sl-item" id="slGpu"><span class="sl-label">GPU</span><span class="sl-bar"><span class="sl-fill"></span></span><span class="sl-val">–</span></span>
+            <span class="sl-item" id="slVram"><span class="sl-label">VRAM</span><span class="sl-bar"><span class="sl-fill"></span></span><span class="sl-val">–</span></span>
+        </div>
+        <button class="tb-icon" onclick="unloadVram(this)" aria-label="Unload VRAM"
+                title="Unload VRAM: free all loaded models now (not while a transcription runs; the next job reloads them)"><svg class="ui-ico"><use href="#i-eject"/></svg></button>
+        <button class="tb-icon" id="btnSoundToggle" onclick="toggleDoneSound()" aria-label="Done sound"
+                title="Done sound on/off"><svg class="ui-ico ico-on"><use href="#i-bell"/></svg><svg class="ui-ico ico-off"><use href="#i-bell-off"/></svg></button>
+    </div>
+</div>
+
+<!-- Directory bar: the open folder and everything that acts on it.
+     The path field works like an address bar (☆ favorite, ▾ browse, ⌂ back
+     to the library root, Enter opens what is typed — "Open this folder" in
+     the picker opens what is browsed); on the right the folder's
+     statistics, a rescan and ⋯ for the scan/index settings. Counts live in
+     the sidebar, not here. -->
+<div class="dir-bar">
+    <div class="path-field" id="pathField">
+        <span class="path-field-icon">📂</span>
+        <input type="text" id="dirInput" value="{{ video_dir }}" autocomplete="off" spellcheck="false"
+               placeholder="/path/to/folder  —  type to filter"
+               onfocus="openPathPicker()" oninput="onPathInput()" onkeydown="onPathKey(event)">
+        <button class="pf-btn path-star" id="btnFavStar" hidden onclick="toggleCurrentFav(event)" title="Save as favorite">☆</button>
+        <button class="pf-btn path-caret" id="btnPathCaret" onclick="togglePathPicker(event)" title="Browse folders">▾</button>
+        <button class="pf-btn pf-home" id="btnPathHome" onclick="ppHome(event)" title="Open the library root" aria-label="Open the library root">⌂</button>
+    </div>
+    <span class="scan-spinner" id="scanSpinner" style="display:none">⟳</span>
+    <span class="dir-status" id="dirStatus"></span>
+    <span class="walk-chip" id="walkChip"></span>
+    <!-- Link download progress (yt-dlp): dialog closes on start,
+         the chip shows n/m + title and carries the cancel button -->
+    <span class="walk-chip" id="ytChip"></span>
+    <span class="index-chip" id="indexChip" title="Index coverage"></span>
+    <div class="dir-actions">
+        <button class="tb-btn tb-autoscan" id="btnAutoscan" onclick="autoscanMenu(event)" aria-pressed="false" aria-haspopup="menu"
+                title="Continuous scanning is off — click to watch the library for new files and transcribe them"><svg class="ui-ico"><use href="#i-autoscan"/></svg><span class="tb-label">Auto</span><span class="tb-dot" aria-hidden="true"></span></button>
+        <button class="db-btn" onclick="openStatsView()" title="The Library on this folder: its numbers, what needs attention, every folder beside it">📊 Stats</button>
+        <button class="db-btn" onclick="Export.show({folder: document.getElementById('dirInput').value})" title="Export this folder's recordings — e.g. everything added today — as text, subtitles, Word, PDF, video or audio">⬇ Export</button>
+        <button class="db-btn" id="btnRefreshWalk" onclick="refreshWalk()" title="Re-scan the filesystem now — finds new and deleted files">⟳ Rescan</button>
+        <div class="bb-more">
+            <button class="bb-more-btn" id="btnFolderMore" onclick="toggleFolderMenu(event)"
+                    title="Scan and index settings" aria-haspopup="menu" aria-expanded="false">⋯</button>
+            <div class="bb-menu down" id="folderMenu" role="menu" hidden>
+                <label class="bm-item bm-check" title="On: walk the filesystem every time a folder opens. Off: load the list from the database — instant, even for huge libraries">
+                    <input type="checkbox" id="autoWalkToggle" onchange="onAutoWalkToggle()">
+                    Scan the filesystem when opening
+                </label>
+                <button class="bm-item" id="bmFavFolder" onclick="closeFolderMenu();toggleCurrentFav(event)" title="Add this folder to the favorites in the folder picker, or take it out">☆ Favorite folder</button>
+                <button class="bm-item" id="btnIndex" onclick="closeFolderMenu();toggleIndexing()"
+                        title="Index missing metadata (duration, resolution, codecs)">📇 Index metadata</button>
+                <button class="bm-item" onclick="closeFolderMenu();startIndexing(true)"
+                        title="Read the metadata of every file again">↻ Re-read all metadata</button>
+            </div>
+        </div>
+    </div>
+    <!-- Unified Path Picker (breadcrumb + favorites + live-filtered folder list) -->
+    <div class="path-picker" id="pathPicker" style="display:none">
+        <div class="pp-breadcrumb" id="ppBreadcrumb"></div>
+        <div class="pp-body">
+            <div class="pp-favs" id="ppFavs"></div>
+            <div class="pp-list" id="ppList"></div>
+        </div>
+        <div class="pp-footer">
+            <span class="pp-hint" id="ppHint"></span>
+            <button class="pp-open" id="ppOpenBtn" onclick="ppChooseCurrent()">Open this folder</button>
+        </div>
+    </div>
+</div>
+
+<!-- Layout -->
+<div class="layout">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <!-- Quickfilter — the same chips as in the search dropdown (ONE state,
+             two surfaces). Error/Cancelled only appear when needed. -->
+        <div class="sidebar-quick" id="sidebarQuickFilters">
+            <!-- File states: one segmented bar, count above label. Error,
+                 Cancelled, Orphaned and Active only appear when there is
+                 something to show (stats.js). How much is embedded is shown
+                 in Settings → Search, not here. -->
+            <div class="qf-seg" role="tablist" aria-label="Filter files by state">
+                <button class="qf-chip active" data-filter="all" onclick="setFileTab('all',this)">
+                    <span class="qf-count" id="tabAll">0</span><span class="qf-label">All</span>
+                </button>
+                <button class="qf-chip" data-filter="pending" onclick="setFileTab('pending',this)">
+                    <span class="qf-count" id="tabPending">0</span><span class="qf-label">Open</span>
+                </button>
+                <button class="qf-chip qf-done" data-filter="done" onclick="setFileTab('done',this)">
+                    <span class="qf-count" id="tabDone">0</span><span class="qf-label">Done</span>
+                </button>
+                <button class="qf-chip qf-active" data-filter="processing" id="tabProcessingBtn" onclick="setFileTab('processing',this)" style="display:none">
+                    <span class="qf-count" id="tabProcessing">0</span><span class="qf-label">Active</span>
+                </button>
+                <button class="qf-chip qf-err" data-filter="error" id="tabErrorBtn" onclick="setFileTab('error',this)" style="display:none" title="Processing failed — details in the row chip, ↩ re-queues">
+                    <span class="qf-count" id="tabError">0</span><span class="qf-label">Error</span>
+                </button>
+                <button class="qf-chip qf-cancel" data-filter="cancelled" id="tabCancelledBtn" onclick="setFileTab('cancelled',this)" style="display:none" title="Processing cancelled — ↩ re-queues">
+                    <span class="qf-count" id="tabCancelled">0</span><span class="qf-label">Cancelled</span>
+                </button>
+                <button class="qf-chip qf-orphan" data-filter="orphan" id="tabOrphanBtn" onclick="setFileTab('orphan',this)" style="display:none" title="Orphaned transcripts: media file gone, transcript present — view and delete if needed">
+                    <span class="qf-count" id="tabOrphan">0</span><span class="qf-label">Orphans</span>
+                </button>
+            </div>
+            <!-- Work in progress, not file states: both show their queue in
+                 place of the file list — one click switches between them. -->
+            <div class="qf-work">
+                <button class="qf-chip qf-work-btn" data-filter="queue" onclick="QueuePage.open('tx')" id="tabQueueBtn"
+                        title="Files waiting in the transcription queue">
+                    <span class="qf-label">⏳ Queue</span><span class="qf-count" id="tabQueue">0</span>
+                </button>
+                <button class="qf-chip qf-work-btn" data-filter="llm" id="tabLlmQueueBtn" onclick="QueuePage.open('llm')"
+                        title="LLM queue: summary, correction, translation — runs in parallel to transcription on the LLM server">
+                    <span class="qf-label">🤖 LLM</span><span class="qf-count" id="llmQueueBadge">0</span>
+                </button>
+            </div>
+        </div>
+        <!-- Progress of the open folder. Collapsed: only progress and time
+             left; the rest (sizes, speed, words, index) behind the toggle.
+             Full statistics live behind 📊 in the top bar. -->
+        <div class="dir-stats" id="dirStats">
+            <button class="ds-header" id="dsToggle" onclick="toggleDirStats()"
+                    title="Show / hide details" aria-expanded="false" aria-controls="dsDetails">
+                <span class="ds-pct" id="dsPctText">0%</span>
+                <span class="ds-bar-wrap">
+                    <span class="ds-counts" id="dsCounts"></span>
+                    <span class="ds-bar"><span class="ds-bar-fill" id="dsBarFill" style="width:0%"></span></span>
+                </span>
+                <span class="ds-eta" id="dsEta"></span>
+                <span class="ds-caret" aria-hidden="true">▾</span>
+            </button>
+            <div class="ds-details" id="dsDetails" hidden>
+                <div class="ds-chips" id="dsChips"></div>
+            </div>
+        </div>
+        <div class="sidebar-header fl-row">
+            <input type="text" id="fileFilter" placeholder="Filter files… (e.g. *replay*)">
+            <!-- The filter panel and the sort menu (filterpanel.js) -->
+            <button type="button" class="fl-btn" id="flFilterBtn" onclick="FilterPanel.toggle()" aria-expanded="false"
+                    title="More filters: status, type, length, added, people, language, what a recording has, subfolder"><svg class="ui-ico"><use href="#i-layers"/></svg><span class="fl-n" id="flFilterN" hidden></span></button>
+            <button type="button" class="fl-btn" id="flSortBtn" onclick="FilterPanel.sortMenu()" aria-expanded="false"
+                    title="Sort the list"><span id="flSortLabel">Name ↑</span></button>
+        </div>
+        <div class="fl-chips" id="flChips" hidden></div>
+        <div class="fl-panel" id="flPanel" hidden></div>
+        <div class="fl-menu" id="flSortMenu" hidden></div>
+        <!-- The old sort buttons: setSort() still reads them; the sort menu
+             above is what is shown -->
+        <div class="sort-bar" hidden>
+            <button class="sort-btn active" onclick="setSort('name',this)">
+                Name <span class="arrow" id="arrowName">↑</span>
+            </button>
+            <button class="sort-btn" onclick="setSort('size',this)">
+                Size <span class="arrow" id="arrowSize">↓</span>
+            </button>
+            <button class="sort-btn" onclick="setSort('modified',this)">
+                Date <span class="arrow" id="arrowDate">↓</span>
+            </button>
+            <button class="sort-btn" onclick="setSort('tx_date',this)" title="Sort by transcript creation">
+                TX <span class="arrow" id="arrowTxDate">·</span>
+            </button>
+            <button class="sort-btn" onclick="setSort('tx_word_count',this)" title="Sort by word count">
+                W <span class="arrow" id="arrowWords">·</span>
+            </button>
+        </div>
+        <div class="file-list" id="fileList"></div>
+        <div class="selection-bar" id="selectionBar" style="display:none">
+            <div style="display:flex;align-items:center;gap:6px;width:100%">
+                <span id="selCount" style="font-size:0.72rem;font-weight:600;color:var(--accent);white-space:nowrap">0 selected</span>
+                <button class="btn-batch" id="btnTxSelected" onclick="startSelectedBatch()" style="flex:1;font-size:0.68rem;padding:5px 8px">
+                    ▶ Transcribe selection
+                </button>
+                <!-- Icon only: the bar is as narrow as the sidebar, and "transcribe" comes first -->
+                <button class="btn-batch an-sel-btn" id="btnSummarizeSelected" onclick="summarizeSelected()" style="flex:0 0 auto;font-size:0.8rem;padding:4px 8px"
+                        title="Summarize each selected recording (AI jobs in the queue, with the default summary)"
+                        aria-label="Summarize the selected recordings">📝</button>
+                <button class="btn-batch an-sel-btn" id="btnExportSelected" onclick="Export.show({files: [...selectedFiles]})" style="flex:0 0 auto;font-size:0.8rem;padding:4px 8px"
+                        title="Export the selected recordings: text, subtitles, Word, PDF, video or audio"
+                        aria-label="Export the selected recordings">⬇</button>
+                <button class="btn-batch an-sel-btn" id="btnAnalyzeSelected" onclick="analyzeSelection()" style="flex:0 0 auto;font-size:0.8rem;padding:4px 8px"
+                        title="Analyze the selected recordings — one task over all of them: summarize them together, compare them, find every place where …"
+                        aria-label="Analyze the selected recordings">🧠</button>
+                <button class="btn-batch" id="btnDelSelected" onclick="deleteSelectedTranscripts()" style="flex:1;font-size:0.68rem;padding:5px 8px;background:var(--red);display:none"
+                        title="Delete the transcripts of the selected files">
+                    🗑 Delete <span id="btnDelSelectedLabel">0</span>
+                </button>
+                <button onclick="clearSelection()" style="background:none;border:1px solid var(--border);border-radius:5px;padding:4px 8px;font-size:0.65rem;color:var(--tx-3);cursor:pointer;font-family:inherit" title="Clear selection (Esc)">✕</button>
+            </div>
+        </div>
+        <!-- Footer, minimal: the primary control, the count, and ⋯ for the
+             rest. The running file shows in the ⏳ Queue tab and failures in
+             the Error segment — no second copy down here. The menu items
+             appear only when they apply (filelist.js / batch.js). -->
+        <div class="batch-bar" id="batchBar">
+            <div class="batch-progress" id="batchProgress">
+                <div class="batch-prog-bar"><div class="batch-prog-fill" id="batchProgFill"></div></div>
+            </div>
+            <div class="batch-actions">
+                <button class="btn-batch" id="btnBatch" onclick="startBatch()">
+                    ▶ Transcribe all filtered
+                </button>
+                <span class="bb-status" id="batchProgLabel"></span>
+                <span class="bb-count" id="batchProgCount"></span>
+                <div class="bb-more">
+                    <button class="bb-more-btn" id="btnBatchMore" onclick="toggleBatchMenu(event)"
+                            title="More actions" aria-haspopup="menu" aria-expanded="false">⋯<span class="bb-dot" id="batchMoreDot" hidden></span></button>
+                    <div class="bb-menu" id="batchMenu" role="menu" hidden>
+                        <button class="bm-item" id="btnBatchAdd" onclick="closeBatchMenu();openBatchModalForFiltered()" style="display:none">＋ Queue open files</button>
+                        <button class="bm-item" id="batchRetry" onclick="closeBatchMenu();retryFailedQueue()" style="display:none" title="Re-queue failed and cancelled entries">↩ Retry <span id="batchRetryLabel">0 failed</span></button>
+                        <button class="bm-item" id="btnCancelInline" onclick="closeBatchMenu();cancelCurrentJob()" style="display:none" title="Cancel only the current file — the queue keeps running">✕ Cancel the current file</button>
+                        <button class="bm-item danger" id="btnDelFiltered" onclick="closeBatchMenu();deleteFilteredTranscripts()">🗑 Delete transcripts</button>
+                        <button class="bm-item" id="btnSelectOpen" onclick="closeBatchMenu();selectAllOpen()" style="display:none" title="Select every file of the open folder that has no transcript yet">☑ Select all open</button>
+                        <button class="bm-item" id="btnClearFinishedAi" onclick="closeBatchMenu();_lqClear('done')" style="display:none" title="Remove done, failed and cancelled AI jobs from the queue's list">🧹 Remove finished AI jobs</button>
+                        <button class="bm-item danger" id="btnAbortQueue" onclick="closeBatchMenu();abortQueue()" style="display:none" title="Discard the running job and clear the ENTIRE queue">✕ Clear the entire queue</button>
+                        <div class="bm-empty">Nothing to do right now</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar Resize Handle -->
+    <div class="sidebar-resize" id="sidebarResize"></div>
+
+    <!-- Main -->
+    <div class="main">
+        <!-- Home (home.js): over the main area while no recording is open,
+             or when Home is chosen in the rail -->
+        <section class="home" id="homeView" aria-label="Home" hidden></section>
+        <div class="player-bar" id="playerBar">
+            <video id="videoPlayer" controls preload="metadata"></video>
+            <div id="subtitleOverlay" class="subtitle-overlay" style="display:none"></div>
+        </div>
+        <!-- Who speaks when, one lane per speaker (recording.js); a click seeks -->
+        <div class="rv-lanes" id="rvLanes" hidden></div>
+        <div class="resize-handle" id="resizeHandle"></div>
+
+        <div class="progress-overlay" id="progressOverlay">
+            <div class="live-badge" id="liveBadge" style="display:none">
+                <span class="pulse"></span> LIVE PREVIEW
+            </div>
+            <div class="prog-bar-bg"><div class="prog-bar" id="progBar"></div></div>
+            <div class="prog-info">
+                <div class="spin" id="progSpin"></div>
+                <span id="progMsg">—</span>
+                <span id="progElapsed" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--tx-3);min-width:50px"></span>
+                <span class="prog-pct" id="progPct">0%</span>
+                <button class="btn-cancel-job" id="btnCancelJob" onclick="cancelCurrentJob()">✕ Cancel</button>
+            </div>
+            <div class="log-toggle" onclick="toggleLogViewer()">
+                <span class="arrow" id="logArrow">▶</span> Details
+                <span class="logmode-switch" onclick="event.stopPropagation()">
+                    <button id="lmMap" class="lm-btn active" onclick="setLogMode('map')">🗺 Progress</button>
+                    <button id="lmRaw" class="lm-btn" onclick="setLogMode('raw')">📜 Raw log</button>
+                </span>
+                <span id="logCount" style="margin-left:auto;opacity:0.5">0</span>
+                <a id="logDownloadLink" href="#" download style="display:none;margin-left:8px;font-size:0.72rem;color:var(--accent);text-decoration:none" onclick="event.stopPropagation()">📋 Save log</a>
+            </div>
+            <div class="log-viewer" id="logViewer"></div>
+            <div class="step-map" id="stepMap"></div>
+        </div>
+
+        <div class="transcript-area" id="transcriptArea">
+            <div class="empty-state" id="emptyState">
+                <div class="icon">📂</div>
+                <p>Select a file to display its transcript</p>
+            </div>
+        </div>
+
+        <!-- Clip Editor -->
+        <div class="clip-editor" id="clipEditor">
+            <!-- Row above the bar: LEFT shows what's currently visible
+                 and how to operate it, RIGHT the controls for it. Before,
+                 the clip display and the usage hint both had
+                 `margin-left:auto` and the whole row `flex-end` — on
+                 a wide screen the zoom group ended up floating
+                 freely in the middle. -->
+            <div class="clip-zoom-bar">
+                <span class="clip-zoom-hint" id="clipZoomHint">Whole file</span>
+                <!-- A long recording's waveform is read in the background -->
+                <span class="clip-wave-state" id="clipWaveState" hidden
+                      title="The waveform is being read — it fills in as it comes"></span>
+                <!-- Usage hint, because otherwise you'd never find it: the
+                     middle mouse button isn't labeled anywhere, and unless
+                     you press it by accident, you'd never learn about it. -->
+                <span class="clip-controlhint">Click: markers · Mouse wheel: pan
+                    · Ctrl+wheel: zoom · <b>Middle button: playhead position</b></span>
+                <div class="clip-zoom-group">
+                    <label>Zoom</label>
+                    <input type="range" id="clipZoom" min="0" max="100" value="0" step="1" oninput="onClipZoom()">
+                    <span class="zoom-val" id="clipZoomVal">1×</span>
+                    <button class="clip-zoom-btn" onclick="clipZoomToRegion()"
+                            title="Zoom to the selection between IN and OUT">🎯 Selection</button>
+                    <button class="clip-zoom-btn" onclick="clipZoomToPlayhead()"
+                            title="Zoom to the current playhead position">⌖ Position</button>
+                </div>
+            </div>
+            <div class="clip-timeline" id="clipTimeline">
+                <div class="clip-timeline-inner" id="clipTimelineInner" style="left:0%;width:100%">
+                    <canvas class="clip-wave" id="clipWave" hidden></canvas>
+                    <div class="clip-segments" id="clipSegBars"></div>
+                    <div class="clip-region" id="clipRegion"></div>
+                    <div class="clip-playhead" id="clipPlayhead"></div>
+                </div>
+            </div>
+            <div class="clip-controls">
+                <div class="clip-time-group">
+                    <label>IN</label>
+                    <div class="clip-nudge">
+                        <button onclick="nudgeClip('in',-1)">-1s</button>
+                        <button onclick="nudgeClip('in',-0.1)">-.1</button>
+                    </div>
+                    <input type="text" class="clip-time-input" id="clipIn" value="0:00:00.0" oninput="onClipTimeInput()">
+                    <div class="clip-nudge">
+                        <button onclick="nudgeClip('in',0.1)">+.1</button>
+                        <button onclick="nudgeClip('in',1)">+1s</button>
+                    </div>
+                </div>
+                <div class="clip-time-group">
+                    <label>OUT</label>
+                    <div class="clip-nudge">
+                        <button onclick="nudgeClip('out',-1)">-1s</button>
+                        <button onclick="nudgeClip('out',-0.1)">-.1</button>
+                    </div>
+                    <input type="text" class="clip-time-input" id="clipOut" value="0:00:10.0" oninput="onClipTimeInput()">
+                    <div class="clip-nudge">
+                        <button onclick="nudgeClip('out',0.1)">+.1</button>
+                        <button onclick="nudgeClip('out',1)">+1s</button>
+                    </div>
+                </div>
+                <div class="clip-actions">
+                    <div class="clip-duration">
+                        Duration: <strong id="clipDuration">0s</strong>
+                    </div>
+                    <button class="btn-clip-preview" onclick="previewClip()">▶ Preview</button>
+                    <button class="btn-clip-preview" onclick="amFromClip()"
+                            title="Find every recording that holds this stretch — the same sound, also re-encoded or under noise (1 s to 5 min)">≋ Same audio</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div><!-- /app-col -->
+
+<!-- Transcribe Settings Modal -->
+<!-- Delete: what exactly? Derivatives (summary/translation/
+     correction run) survive deletion of the transcript — anyone who
+     wants to get rid of them too checks them individually here. -->
+<div class="modal-bg" id="delModal">
+    <div class="modal" style="max-width:520px">
+        <h3>🗑 Delete</h3>
+        <p style="font-size:0.82rem;color:var(--tx-2);margin-bottom:12px;word-break:break-all" id="delFilename">—</p>
+        <div id="delOptions"></div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeDelModal()">Cancel</button>
+            <button class="btn-go" id="btnDelGo" style="background:var(--red)" onclick="confirmDelete()">Delete</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+    <div class="modal modal-wide">
+        <h3 id="modalTitle">Start transcription</h3>
+        <div id="optTxOptions"></div>
+        <div class="modal-actions">
+            <button class="btn-cancel btn-defaults" onclick="txSaveDefaults('opt', this)"
+                    title="Every transcription dialog starts with these choices from now on (the same as under Settings → Transcription)">☆ Make these my defaults</button>
+            <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+            <!-- "Next up": queue right at the front instead of behind
+                 everything else waiting — and a paused queue starts running for it. -->
+            <button class="btn-go" id="btnStartTxNext" style="background:var(--orange)"
+                    onclick="confirmTranscribe(true)"
+                    title="Right at the front of the queue — ahead of everything else waiting">⤒ Next up</button>
+            <button class="btn-go" id="btnStartTx" onclick="confirmTranscribe()">Start</button>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal-bg" id="uploadModal">
+    <div class="modal modal-wide">
+        <h3>⬆ Add — file or link</h3>
+        <!-- Source as a visible toggle (no hidden dropdown);
+             WHAT happens is decided solely by the options below -->
+        <div class="src-toggle">
+            <button type="button" class="src-btn active" id="srcBtnFile"
+                    onclick="setUploadSource('file')">📂 Upload file</button>
+            <button type="button" class="src-btn" id="srcBtnLink"
+                    onclick="setUploadSource('link')">🎬 Link / playlist</button>
+        </div>
+        <div id="uploadFileSection">
+            <div class="field">
+                <div class="upload-drop" id="uploadDrop" onclick="document.getElementById('uploadInput').click()">
+                    <input type="file" id="uploadInput" accept=".mp3,.wav,.flac,.ogg,.m4a,.mp4,.mkv,.avi,.mov,.webm,.wma,.aac,.opus,.3gp,.3gpp,.amr,.awb,.spx,.caf,.au,.mka,.oga,.gsm,.snd,.voc,.wmv,.ts,.m2ts,.mpg,.mpeg,.ogv" style="display:none" onchange="onUploadFileSelected()">
+                    <div class="upload-drop-content" id="uploadDropContent">
+                        <div class="upload-drop-icon">📂</div>
+                        <div class="upload-drop-text">Drag a file here or click</div>
+                        <div class="upload-drop-hint">Audio & video</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="uploadYoutubeSection" style="display:none">
+            <div class="field">
+                <div class="yt-input">
+                    <input type="text" id="ytUrl" placeholder="https://…  (video or playlist link)"
+                           onkeydown="if(event.key==='Enter'){event.preventDefault();ytAddLink();}">
+                    <button type="button" class="s-btn" id="ytAddBtn"
+                            onclick="ytAddLink()">＋ Add</button>
+                </div>
+                <div class="yt-list" id="ytList"></div>
+                <div class="hint">Collect multiple links and load them in
+                    <b>one</b> job — Enter or ＋ adds one. Playlists are
+                    processed completely and count as one link; everything
+                    lands in the upload directory. Handles anything yt-dlp
+                    knows (YouTube, Vimeo, …).
+                    Cookies and extra arguments: Settings&nbsp;→&nbsp;⬇&nbsp;Downloads.</div>
+            </div>
+            <div class="field">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;font-size:0.85rem">
+                    <input type="checkbox" id="ytAudioOnly" style="width:16px;height:16px;accent-color:#3b82f6">
+                    🎵 Audio only (no video)
+                </label>
+                <div class="hint">Saves storage and bandwidth when you're
+                    only transcribing anyway. Pre-filled from settings.</div>
+            </div>
+        </div>
+        <div id="upTxOptions"></div>
+        <div class="upload-prog" id="uploadProg" style="display:none">
+            <div class="prog-bar-bg"><div class="prog-bar" id="uploadBar"></div></div>
+            <div class="info" id="uploadInfo">—</div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-cancel btn-defaults" onclick="txSaveDefaults('up', this)"
+                    title="Every transcription dialog starts with these choices from now on (the same as under Settings → Transcription)">☆ Make these my defaults</button>
+            <button class="btn-cancel" onclick="closeUpload()">Cancel</button>
+            <button class="btn-go" id="btnUploadGo" onclick="doUpload()">⬆ Upload & start</button>
+        </div>
+    </div>
+</div>
+
+<!-- Batch Modal -->
+<div class="modal-bg" id="batchModal">
+    <div class="modal modal-wide">
+        <h3>Batch transcription</h3>
+        <div style="margin-bottom:16px; padding:12px; background:var(--bg-0); border-radius:8px; border:1px solid var(--border)">
+            <div style="display:flex; justify-content:space-between; font-size:0.82rem; margin-bottom:4px">
+                <span>Files:</span>
+                <span style="font-weight:600; color:var(--accent)" id="batchModalCount">0</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.82rem">
+                <span>Filter:</span>
+                <span style="font-family:var(--font-mono); font-size:0.75rem; color:var(--tx-2)" id="batchModalFilter">(all)</span>
+            </div>
+        </div>
+        <div id="batchTxOptions"></div>
+        <div class="modal-actions">
+            <button class="btn-cancel btn-defaults" onclick="txSaveDefaults('batch', this)"
+                    title="Every transcription dialog starts with these choices from now on (the same as under Settings → Transcription)">☆ Make these my defaults</button>
+            <button class="btn-cancel" onclick="closeBatchModal()">Cancel</button>
+            <button class="btn-go" onclick="confirmBatch()">▶ Start batch</button>
+        </div>
+    </div>
+</div>
+
+<!-- Queue editor: filter, mark, change settings,
+     remove, reorder — for ALL pending items or individually marked ones.
+     Logic in queue_editor.js; server: /api/queue/editor/*. -->
+<div class="modal-bg" id="queueEditorModal">
+  <div class="modal modal-wide qe-modal">
+    <div class="qe-head">
+      <h3><svg class="ui-ico"><use href="#i-queue"/></svg>Queue</h3>
+      <span class="qe-tabs">
+        <button class="qe-tab" id="qeTabJobs" onclick="qeShowTab('jobs')" title="Transcriptions and AI jobs: running, waiting, failed, done">Jobs</button>
+        <button class="qe-tab" id="qeTabQueue" onclick="qeShowTab('queue')" title="Filter the waiting, failed or cancelled transcriptions and change, move or remove many at once">Edit in bulk</button>
+        <button class="qe-tab" id="qeTabLibrary" onclick="qeShowTab('library')" title="Pick files from the whole library by what is known about them">Add from the library</button>
+        <button class="qe-tab" id="qeTabAdd" onclick="qeShowTab('add')" title="A folder's files without a transcript — at the front (next up) or at the end, with the transcription options">Add a folder</button>
+      </span>
+      <span id="qeChips"><span class="llm-chip" id="qeChipPending">⏳ <b>0</b> pending</span><span class="llm-chip orange" id="qeChipRunning" style="display:none">⟳ running</span><span class="llm-chip red" id="qeChipError" style="display:none">⚠ <b>0</b> errors/cancelled</span></span>
+      <button class="tx-act-btn" id="qeBtnReload" onclick="qeReloadTab()" title="Reload">↻</button>
+      <button class="tx-act-btn" id="qeBtnClose" onclick="closeQueueEditor()" title="Close (Esc)">✕</button>
+    </div>
+    <!-- Jobs (queue_page.js): transcriptions and AI jobs in one list -->
+    <div class="qe-pane qj-pane" id="qePaneJobs" style="display:none">
+      <div class="qj-bar" id="qjBar"></div>
+      <div class="qj-list" id="qjList"></div>
+    </div>
+    <div class="qe-pane" id="qePaneQueue">
+    <div class="qe-hint" id="qeHint" style="display:none"></div>
+    <div class="qe-filter">
+      <select id="qeStatus" onchange="qeStatusChanged(this.value)"><option value="pending">⏳ Pending</option><option value="error">⚠ Failed</option><option value="cancelled">✕ Cancelled</option></select>
+      <select id="qeRoot" onchange="qeRootChanged(this.value)" style="display:none"></select>
+      <nav id="qeCrumbs" class="qe-breadcrumb"></nav>
+      <input type="text" id="qeSearch" placeholder="Path contains … (* allowed)" oninput="qeSearchChanged()">
+      <input type="text" id="qeName" placeholder="File name … (* allowed)" oninput="qeSearchChanged()"
+             title="The file name alone, case ignored — not the folders above it">
+      <select id="qeSettingFilter" onchange="qeSettingFilterChanged(this.value)">
+        <option value="">Setting: any</option>
+        <option value="job=voices">🗣 Voices only</option>
+        <option value="refresh=true">🗣 Renew voices, names kept</option>
+        <option value="retranscribe=true">↻ Re-transcription</option>
+        <option value="low_vram=true">🧠 Spare VRAM: on</option>
+        <option value="low_vram=false">🧠 Spare VRAM: off</option>
+        <option value="low_vram=null">🧠 Spare VRAM: not set (default)</option>
+        <option value="diarize=true">👥 Speakers: on</option>
+        <option value="diarize=false">👥 Speakers: off</option>
+        <option value="vocal_isolation=true">🎤 Vocal isolation: on</option>
+        <option value="summarize=true">🤖 Summary: on</option>
+        <option value="oom_attempts=1">🔁 failed on VRAM once</option>
+        <option value="oom_attempts=2">🔁 failed on VRAM twice</option>
+      </select>
+      <label class="qe-check-small"><input type="checkbox" id="qeRecursive" checked onchange="qeRecursiveChanged(this.checked)"> Subfolders</label>
+      <span class="qe-hits"><b id="qeHits">0</b> <span id="qeHitsNoun">hits</span></span>
+    </div>
+    <div class="qe-scope">
+      <span><b id="qeSelected">0</b> marked</span>
+      <button class="tx-act-btn" id="qeBtnSelectAll" onclick="qeSelectAll()" title="Mark all matches of the filter (Ctrl+A)">☑ Mark all matches</button>
+      <button class="tx-act-btn" id="qeBtnClearSelection" onclick="qeClearSelection()">☐ Clear marks</button>
+      <span class="qe-scope-choice">Applies to:
+        <label><input type="radio" name="qeScope" id="qeScopeAll" value="all_items" checked onchange="qeSetScope('all_items')"> <span id="qeScopeAllLabel">all matches (0)</span></label>
+        <label><input type="radio" name="qeScope" id="qeScopeSelected" value="selected" onchange="qeSetScope('selected')"> <span id="qeScopeSelectedLabel">marked only (0)</span></label>
+      </span>
+    </div>
+    <div class="qe-body">
+      <div id="qeFolder" class="qe-folder"></div>
+      <div class="qe-list-frame">
+        <div id="qeList" class="qe-list"></div>
+        <div class="qe-foot" id="qeFoot">
+          <span id="qePageInfo">0–0 of 0</span>
+          <button class="tx-act-btn" id="qeBtnPrev" onclick="qeSwitchPage(-1)">‹</button>
+          <button class="tx-act-btn" id="qeBtnNext" onclick="qeSwitchPage(1)">›</button>
+          <select id="qePageSize" onchange="qeSetPageSize(this.value)"><option value="200">200</option><option value="500">500</option><option value="1000">1000</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="qe-confirm" id="qeConfirmation" style="display:none">
+      <div id="qeConfirmText"></div>
+      <div id="qeConfirmSample" class="qe-sample"></div>
+      <input type="text" id="qeCountInput" placeholder="Type the number to confirm" style="display:none" oninput="qeCountChecked()">
+      <div class="qe-confirm-btns">
+        <button class="tx-act-btn" id="qeBtnCancel" onclick="qeCancelConfirmation()">Cancel</button>
+        <button class="tx-act-btn" id="qeBtnConfirm" onclick="qeConfirm()">Yes, proceed</button>
+      </div>
+    </div>
+    <div class="modal-actions qe-actions">
+      <button class="tx-act-btn" id="qeBtnSettings" onclick="qeSettingsOpen()">⚙ Change settings…</button>
+      <button class="tx-act-btn" id="qeBtnLowVram" onclick="qeAction('settings', {settings: {low_vram: true}})" title="Shortcut for runs that fail with out-of-memory: unload models after each step">🧠 Turn on Spare VRAM</button>
+      <button class="tx-act-btn" id="qeBtnTop" onclick="qeAction('move', {to: 'top'})">⤒ Move to top</button>
+      <button class="tx-act-btn" id="qeBtnBottom" onclick="qeAction('move', {to: 'bottom'})">⤓ Move to bottom</button>
+      <button class="tx-act-btn tx-act-danger" id="qeBtnRemove" onclick="qeAction('remove', {})">✕ Remove</button>
+      <button class="tx-act-btn" id="qeBtnRetry" onclick="qeRetry()" style="display:none">↩ Re-queue</button>
+      <span style="flex:1"></span>
+      <button class="btn-cancel" id="qeBtnCloseFooter" onclick="closeQueueEditor()">Close</button>
+    </div>
+    </div>
+    <!-- Add folder: one folder's files without a transcript, with the
+         transcription options, at the front or at the end. Logic in
+         queue_add.js; server: /api/queue/library/* like "From library". -->
+    <div class="qe-pane ls-pane" id="qePaneAdd" style="display:none">
+      <div class="qa-where">
+        <label for="qaFolder">Folder</label>
+        <!-- The file list's path field and picker (pathpicker.js, place 'qa') -->
+        <div class="qa-path-wrap">
+          <div class="path-field" id="qaPathField">
+            <span class="path-field-icon">📂</span>
+            <input type="text" id="qaFolder" placeholder="/mnt/…  —  with its subfolders; type to filter"
+                   autocomplete="off" spellcheck="false"
+                   onfocus="openPathPicker('qa')" oninput="onPathInput('qa')" onkeydown="onPathKey(event, 'qa')">
+            <button class="pf-btn path-star" id="qaFavStar" onclick="toggleCurrentFav(event, 'qa')" title="Save as favorite">☆</button>
+            <button class="pf-btn path-caret" onclick="togglePathPicker(event, 'qa')" title="Browse folders">▾</button>
+          </div>
+          <div class="path-picker" id="qaPathPicker" style="display:none">
+            <div class="pp-breadcrumb" id="qaPpBreadcrumb"></div>
+            <div class="pp-body">
+              <div class="pp-favs" id="qaPpFavs"></div>
+              <div class="pp-list" id="qaPpList"></div>
+            </div>
+            <div class="pp-footer">
+              <span class="pp-hint" id="qaPpHint"></span>
+              <button class="pp-open" onclick="ppChooseCurrent()">Choose this folder</button>
+            </div>
+          </div>
+        </div>
+        <button class="tx-act-btn" onclick="qaUseOpenFolder()" title="The folder open in the file list">📁 File list's folder</button>
+      </div>
+      <div class="ls-body">
+        <div class="ls-criteria qa-options"><div id="qaTxOptions"></div></div>
+        <div class="ls-result">
+          <div class="ls-summary" id="qaSummary">Choose a folder.</div>
+          <div class="ls-list" id="qaList"></div>
+        </div>
+      </div>
+      <div class="qe-confirm" id="qaConfirm" style="display:none">
+        <div id="qaConfirmText"></div>
+        <div class="qe-confirm-btns">
+          <button class="tx-act-btn" onclick="qaCancelConfirm()">Cancel</button>
+          <button class="tx-act-btn" id="qaBtnConfirm" onclick="qaEnqueue()">Yes, queue them</button>
+        </div>
+      </div>
+      <div class="modal-actions ls-actions">
+        <span class="ls-job">Where
+          <label title="Next up: before every waiting entry — the running files finish first"><input type="radio" name="qaWhere" value="front" checked onchange="qaWhereChanged()"> ⤒ At the front</label>
+          <label title="Behind every waiting entry"><input type="radio" name="qaWhere" value="back" onchange="qaWhereChanged()"> ⤓ At the end</label>
+        </span>
+        <span style="flex:1"></span>
+        <button class="tx-act-btn" id="qaBtnQueue" onclick="qaAskConfirm()" disabled>Queue 0 files at the front</button>
+        <button class="btn-cancel" onclick="closeQueueEditor()">Close</button>
+      </div>
+    </div>
+    <!-- From library: select files by what is known about them and queue
+         them as one job. Logic in library_select.js; server:
+         /api/queue/library/* (core/library_select.py). -->
+    <div class="qe-pane ls-pane" id="qePaneLibrary" style="display:none">
+      <div class="ls-presets" id="lsPresets"></div>
+      <div class="ls-body">
+        <div class="ls-criteria" id="lsCriteria"></div>
+        <div class="ls-result">
+          <div class="ls-summary" id="lsSummary">Choose criteria on the left.</div>
+          <div class="ls-list" id="lsList"></div>
+          <div class="qe-foot">
+            <span id="lsPageInfo"></span>
+            <button class="tx-act-btn" id="lsBtnPrev" onclick="lsPage(-1)">‹</button>
+            <button class="tx-act-btn" id="lsBtnNext" onclick="lsPage(1)">›</button>
+          </div>
+        </div>
+      </div>
+      <div class="qe-confirm" id="lsConfirm" style="display:none">
+        <div id="lsConfirmText"></div>
+        <div class="qe-confirm-btns">
+          <button class="tx-act-btn" onclick="lsCancelConfirm()">Cancel</button>
+          <button class="tx-act-btn" id="lsBtnConfirm" onclick="lsEnqueue()">Yes, queue them</button>
+        </div>
+      </div>
+      <div class="modal-actions ls-actions">
+        <span class="ls-job">Queue as
+          <label title="Files without a transcript"><input type="radio" name="lsJob" value="transcribe" checked onchange="lsJobChanged()"> 📝 Transcribe</label>
+          <label title="Diarization + voice vectors — the transcript stays as it is"><input type="radio" name="lsJob" value="voices" onchange="lsJobChanged()"> 🗣 Voices only</label>
+          <label title="Voices made anew — names, trash and history carried over"><input type="radio" name="lsJob" value="voices_refresh" onchange="lsJobChanged()"> ↻ Renew voices</label>
+          <label title="Deletes and remakes the transcript — edits and voice names are lost"><input type="radio" name="lsJob" value="retranscribe" onchange="lsJobChanged()"> ♻ Re-transcribe</label>
+        </span>
+        <span class="ls-job-hint" id="lsJobHint"></span>
+        <span style="flex:1"></span>
+        <span class="ls-job">
+          <label title="Behind every waiting entry"><input type="radio" name="lsWhere" value="back" checked onchange="lsRenderButton()"> ⤓ At the end</label>
+          <label title="Next up: before every waiting entry — the running files finish first"><input type="radio" name="lsWhere" value="front" onchange="lsRenderButton()"> ⤒ At the front</label>
+        </span>
+        <button class="tx-act-btn" id="lsBtnQueue" onclick="lsAskConfirm()" disabled>Queue 0 files</button>
+        <button class="btn-cancel" onclick="closeQueueEditor()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Sub-dialog: settings for the selection — only groups in mode
+     "set" or "default" go into the request. -->
+<div class="modal-bg qe-on-top" id="qeSettingsModal">
+  <div class="modal modal-wide">
+    <h3>Change settings for <span id="qsCount">0</span> pending <span id="qsCountNoun">entries</span></h3>
+    <div class="hint" id="qsHint">Only groups with "set to" or "default" are written; everything else stays per entry as it is. "Default" removes the value — then Settings → Transcription applies again. The currently running entry is not touched.</div>
+    <div id="qsSummary" class="qe-summary">No change selected</div>
+    <div id="qeTxOptions"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="qsBtnCancel" onclick="qeSettingsClose()">Cancel</button>
+      <button class="btn-go" id="qsBtnApply" onclick="qeSettingsApply()" disabled>Apply to 0</button>
+    </div>
+  </div>
+</div>
+
+<!-- Separation Modal -->
+<!-- Log Viewer Modal -->
+<div class="modal-bg" id="logModal">
+    <div class="modal" style="max-width:800px;width:90%">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <h3 style="margin:0">📋 Transcription log</h3>
+            <div style="display:flex;gap:6px">
+                <a id="logModalDownload" href="#" download class="btn-go" style="font-size:0.72rem;padding:5px 12px;text-decoration:none">⬇ Download</a>
+                <button class="btn-cancel" onclick="closeLogModal()">Close</button>
+            </div>
+        </div>
+        <div id="logModalContent" style="
+            background:var(--bg-2);border:1px solid var(--border);border-radius:6px;
+            padding:12px;font-family:var(--font-mono);font-size:0.72rem;
+            color:var(--tx-2);max-height:60vh;overflow-y:auto;white-space:pre-wrap;
+            line-height:1.6;
+        ">Loading…</div>
+    </div>
+</div>
+
+<!-- Health check: "Is everything healthy?" at a glance. The panel fits
+     its content (nine cards) instead of the statistics' fixed height. -->
+<!-- Machine (machine.js): health, the load and its history, models and
+     connections — one window, three tabs -->
+<div class="stv-overlay mc-overlay" id="healthOverlay" onclick="if(event.target===this)closeHealthView()">
+    <div class="stv-panel mc-panel">
+        <div class="stv-head mc-head">
+            <span class="stv-title"><svg class="ui-ico"><use href="#i-health"/></svg>Machine</span>
+            <nav class="vx-tabs mc-tabs" id="mcTabs" role="tablist" aria-label="Machine">
+                <button class="vx-tab" data-tab="health" role="tab" onclick="Machine.tab('health')"
+                        title="GPU, the queue's speed and errors, database, library folder, warnings"><svg class="ui-ico"><use href="#i-health"/></svg>Health</button>
+                <button class="vx-tab" data-tab="load" role="tab" onclick="Machine.tab('load')"
+                        title="CPU, RAM, GPU and VRAM now and over the last days, and what uses them"><svg class="ui-ico"><use href="#i-cpu"/></svg>Load history</button>
+                <button class="vx-tab" data-tab="models" role="tab" onclick="Machine.tab('models')"
+                        title="The speech model, the language model, embeddings and the images &amp; sounds service — whether they answer and where to set them"><svg class="ui-ico"><use href="#i-server"/></svg>Models &amp; connections</button>
+            </nav>
+            <span style="flex:1"></span>
+            <button class="tb-btn" onclick="unloadVram(this)" title="Unload VRAM: free all loaded models now (not while a transcription runs; the next job reloads them)"><svg class="ui-ico"><use href="#i-eject"/></svg><span class="tb-label">Unload VRAM</span></button>
+            <button class="stv-icon" onclick="Machine.refresh()" title="Refresh now">↻</button>
+            <button class="stv-icon" onclick="closeHealthView()" title="Close (Esc)">✕</button>
+        </div>
+        <div class="stv-body mc-page" data-page="health" id="healthBody"></div>
+        <div class="stv-body mc-page" data-page="load" id="mcLoad" hidden><div class="pv-body" id="perfBody"></div></div>
+        <div class="stv-body mc-page" data-page="models" id="mcModels" hidden></div>
+    </div>
+</div>
+
+<!-- ══ Voices — map, guided assignment, people, history, extractor ═════════
+     One workspace with tabs instead of fixed floating panels. Nothing
+     floats over the map any more: its details sit docked at the side, and
+     the guided assignment has a page of its own. Every tab loads what it
+     shows only when it is opened — the map (tens of MB for a large voice
+     collection) is not fetched for a round of assigning. -->
+<div class="map-overlay" id="mapOverlay">
+    <div class="map-panel vx-panel">
+        <div class="vx-head">
+            <span class="vx-title"><svg class="ui-ico"><use href="#i-voices"/></svg>Voices</span>
+            <nav class="vx-tabs" id="vxTabs" role="tablist" aria-label="Voices">
+                <button class="vx-tab" data-tab="people" role="tab" onclick="vxTab('people')"
+                        title="The named people: listen through each one's voices, their conversations, rename"><svg class="ui-ico"><use href="#i-user"/></svg>People</button>
+                <button class="vx-tab" data-tab="assign" role="tab" onclick="vxTab('assign')"
+                        title="Name voices: the group that decides the most open speech first"><svg class="ui-ico"><use href="#i-user-check"/></svg>Name voices</button>
+                <button class="vx-tab" data-tab="history" role="tab" onclick="vxTab('history')"
+                        title="Every decision on names and the trash — undo and redo"><svg class="ui-ico"><use href="#i-history"/></svg>History</button>
+                <button class="vx-tab" data-tab="map" role="tab" onclick="vxTab('map')"
+                        title="Voice map: every voice of the collection, grouped by how alike they sound"><svg class="ui-ico"><use href="#i-grid"/></svg>Voice map</button>
+                <button class="vx-tab" data-tab="conversations" role="tab" onclick="vxTab('conversations')"
+                        title="Conversations: who talks with whom, how long and how — the same view as in Find"><svg class="ui-ico"><use href="#i-conversation"/></svg>Conversations</button>
+                <button class="vx-tab" data-tab="extract" role="tab" onclick="vxTab('extract')"
+                        title="Voice dataset: one person's voice as clips with their sentences — for a dataset or one file"><svg class="ui-ico"><use href="#i-scissors"/></svg>Voice dataset</button>
+                <button class="vx-tab" data-tab="help" role="tab" onclick="vxTab('help')"
+                        title="How it works: what the tabs do, the words they use, and the keys"><svg class="ui-ico"><use href="#i-help"/></svg>How it works</button>
+            </nav>
+            <span class="map-state" id="mapState"></span>
+            <!-- The workspace's own: wired by the map's set-up it did nothing on
+                 any other tab — the one left last time opens first -->
+            <button class="vx-icon" id="mapClose" onclick="vxClose()" title="Close (Esc)">✕</button>
+        </div>
+
+        <!-- ── Map ─────────────────────────────────────────────────────── -->
+        <section class="vx-page vx-page-map" data-page="map" id="vxPageMap">
+            <!-- The threshold is the core of the map: you SEE how groups
+                 fall apart under a stricter one. Computed on release. -->
+            <div class="vx-toolbar map-slider" id="mapSliderRow">
+                <div class="vx-seg" role="group" aria-label="What the map shows">
+                    <button class="vx-seg-btn active" id="mapSrcLibrary" onclick="graphTrashView(false)"
+                            title="The voices in use">Library</button>
+                    <button class="vx-seg-btn" id="mapSrcTrash" onclick="graphTrashView(true)"
+                            title="What was discarded — restore from here or in the History">Trash <span class="vx-count" id="mapTrashCount"></span></button>
+                </div>
+                <!-- Two VIEWS of the same data. Tiles = static and smooth,
+                     graph = shows the connections, at the cost of a force
+                     simulation (voicemap_tiles.js). -->
+                <div class="vx-seg" role="group" aria-label="View">
+                    <button class="vx-seg-btn map-view-btn active" data-view="tiles"
+                            onclick="mapView('tiles')"
+                            title="Static: one tile per group, one field per voice">Tiles</button>
+                    <button class="vx-seg-btn map-view-btn" data-view="graph"
+                            onclick="mapView('graph')"
+                            title="Force simulation with connection lines — shows more, costs more">Graph</button>
+                </div>
+                <span class="vx-sep"></span>
+                <label class="vx-field" title="How alike two voices must sound to share a group">Threshold
+                    <input type="range" id="mapThreshold" min="0.30" max="0.99"
+                           step="0.01" value="0.94"
+                           oninput="graphThresholdSet(this.value)">
+                    <span id="mapThresholdValue">0.94</span>
+                </label>
+                <!-- One step further without dragging: a hundredth can
+                     decide it (0.62 → 0.61 visibly changes the set). Up =
+                     higher — the top button must increase the value. -->
+                <span class="map-step">
+                    <button class="map-mini" id="mapThresholdUp"
+                            onclick="graphThresholdStep(1)"
+                            title="One step stricter (+0.01)">▲</button>
+                    <button class="map-mini" id="mapThresholdDown"
+                            onclick="graphThresholdStep(-1)"
+                            title="One step looser (−0.01)">▼</button>
+                </span>
+                <button class="vx-btn" onclick="graphThresholdSearch()"
+                        title="Compute all thresholds for this person and show the best one">⌖ Best threshold</button>
+                <label class="vx-field">Linkage
+                    <select id="mapLinkage"
+                            onchange="mapLoadGraph({link_method: this.value})">
+                        <option value="average" selected>average</option>
+                        <option value="complete">complete</option>
+                        <option value="single">single</option>
+                    </select>
+                </label>
+                <!-- Minimum size REALLY hides whole groups: no force
+                     simulation, no edges, no hit test. -->
+                <label class="vx-field" title="Groups below this no longer appear in the picture at all">Min. group
+                    <input type="number" id="mapMinGroup" min="1" max="500"
+                           step="1" value="1"
+                           onchange="graphMinGroupSet(this.value)">
+                </label>
+                <!-- Arrange identical names as ONE unit: whoever named
+                     several groups the same said they are one person. -->
+                <label class="vx-field vx-check" title="Pull all groups with the same name together into one">
+                    <input type="checkbox" id="mapCluster" checked
+                           onchange="graphToggleNameClusters(this.checked)">
+                    Bundle names
+                </label>
+                <!-- What only the force simulation knows — out of the way in
+                     a menu, and only in the graph view. -->
+                <div class="vx-pop-wrap map-graph-only">
+                    <button class="vx-btn" id="mapLayoutBtn" onclick="vxPopToggle('mapLayoutPop', this)"
+                            title="How the graph is laid out">Layout ▾</button>
+                    <div class="vx-pop" id="mapLayoutPop" hidden>
+                        <label class="vx-field map-graph-only" title="This many connections per voice — more turns into a tangle">Edges per voice
+                            <input type="number" id="mapK" min="1" max="20" step="1" value="5"
+                                   onchange="mapLoadGraph({k: Number(this.value)})">
+                        </label>
+                        <!-- Scales springs AND group attraction together. -->
+                        <label class="vx-field map-graph-only" title="How strongly similar voices are pulled toward each other">Pull
+                            <input type="range" id="mapDrag" min="0.1" max="10" step="0.1"
+                                   value="1" oninput="graphDragSet(this.value)">
+                            <span id="mapDragValue">1.0×</span>
+                        </label>
+                        <!-- More movement AND a slower-tapering cooling. -->
+                        <label class="vx-field map-graph-only" title="Steps of the force simulation — more = the layout settles further">Duration
+                            <input type="number" id="mapSteps" min="50" max="5000"
+                                   step="50" value="420"
+                                   onchange="graphStepsSet(this.value)">
+                        </label>
+                        <!-- Compaction scales the REPULSION: the reason a
+                             cluster doesn't get tighter however hard you pull. -->
+                        <label class="vx-field map-graph-only" title="Smaller = clusters pull together more tightly">Compaction
+                            <input type="range" id="mapDensity" min="0.05" max="2"
+                                   step="0.05" value="1"
+                                   oninput="graphDensitySet(this.value)">
+                            <span id="mapDensityValue">1.00×</span>
+                        </label>
+                        <label class="vx-field vx-check map-graph-only" title="One label per group, at its centroid. Named groups always show.">
+                            <input type="checkbox" id="mapNames" checked
+                                   onchange="graphToggleNames(this.checked)">
+                            Names
+                        </label>
+                        <!-- Outlines separate the many equally grey groups
+                             without implying any relatedness. -->
+                        <label class="vx-field vx-check map-graph-only" title="Closed line around each group — separates adjacent clusters">
+                            <input type="checkbox" id="mapOutlines" checked
+                                   onchange="graphToggleOutlines(this.checked)">
+                            Outlines
+                        </label>
+                        <button class="vx-btn map-graph-only" onclick="graphRearrange()"
+                                title="Restart the force simulation">Rearrange</button>
+                    </div>
+                </div>
+                <span class="vx-gap"></span>
+                <button class="vx-btn" id="mapSideBtn" onclick="vxSideToggle()"
+                        title="Show or hide the details at the side">Details ⇥</button>
+            </div>
+            <!-- FILTER — a VIEW, not a second truth. Non-matches are dimmed
+                 instead of removed, so it stays visible that a group spans
+                 folders and years (voicemap_graph.js). -->
+            <div class="vx-toolbar map-slider map-filter" id="mapFilterRow">
+                <label class="vx-search"><svg class="ui-ico"><use href="#i-search"/></svg>
+                    <input type="text" id="mapFText" placeholder="File or person …"
+                           oninput="graphFilterSet('text', this.value)">
+                </label>
+                <!-- WHERE the search applies: a name can match a FOLDER of
+                     the same name more often than the person. -->
+                <select id="mapFWhere" onchange="graphFilterSet('scope', this.value)"
+                        title="Where the search text should apply">
+                    <option value="all_items">in name and path</option>
+                    <option value="person">name only</option>
+                    <option value="file">path only</option>
+                </select>
+                <label class="vx-field">Folder
+                    <select id="mapFFolder"
+                            onchange="graphFilterSet('folder', this.value)">
+                        <option value="">— all folders —</option>
+                    </select>
+                </label>
+                <!-- The date comes from the FILENAME: the file time may be
+                     a copy or backup date; most recordings carry it in the name. -->
+                <label class="vx-field" title="Recording date from the filename — not the file timestamp, which may be a copy or backup date">Date
+                    <input type="date" id="mapFFrom"
+                           onchange="graphFilterSet('from_value', this.value)">
+                    –
+                    <input type="date" id="mapFTo"
+                           onchange="graphFilterSet('to_value', this.value)">
+                </label>
+                <!-- "Voice named" and "group named" are NOT the same: the
+                     group is a claim by the machine, the name a decision. -->
+                <select id="mapFNaming"
+                        onchange="graphFilterSet('naming', this.value)">
+                    <option value="all_items">all voices</option>
+                    <option value="named" title="This voice is assigned to a person">voice named</option>
+                    <option value="unnamed" title="This voice has no assignment">voice unnamed</option>
+                    <option value="group_nr" title="Everything in a group that has a name — assigned or not">in named group</option>
+                    <option value="open" title="In a named group, but itself still unassigned — the work list">open in named group</option>
+                </select>
+                <button class="vx-btn" onclick="graphClearFilter()">Reset</button>
+                <span id="mapFilterState" class="map-filter-state"></span>
+            </div>
+            <!-- What the picture leaves out or points at, said in words: a
+                 map where half is missing without saying so is a trap. -->
+            <div class="vx-chips" id="mapChips">
+                <span class="map-highlight-chip" id="mapHighlightChip" style="display:none"></span>
+                <span class="vx-chip map-hide-state" id="mapHideState" style="display:none"></span>
+                <span class="vx-chip map-trash-bar" id="mapTrashBar" style="display:none"></span>
+            </div>
+            <div id="mapSearchBar" class="map-search-bar" style="display:none"></div>
+            <div class="vx-mapbody" id="mapBody">
+                <div class="map-stage">
+                    <canvas id="mapCanvas"></canvas>
+                    <div class="map-hint" id="mapHint"></div>
+                    <div class="map-loading" id="mapLoading" hidden role="status" aria-live="polite">
+                        <span class="map-loading-spin" aria-hidden="true"></span>
+                        <span>Loading the voice map …</span>
+                        <span class="map-loading-sec"></span>
+                    </div>
+                </div>
+                <div class="vx-splitter" id="mapSplitter" title="Drag to resize the details"></div>
+                <!-- The details, docked: the chosen voice with its group,
+                     or — with nothing chosen — the largest groups. -->
+                <aside class="vx-side" id="mapSide">
+                    <div class="map-selection" id="mapSelection"></div>
+                    <div class="map-legend" id="mapLegend"></div>
+                </aside>
+            </div>
+            <div class="map-foot" id="mapFoot"></div>
+        </section>
+
+        <!-- ── Assign ──────────────────────────────────────────────────── -->
+        <section class="vx-page vx-page-assign" data-page="assign" id="mapAssign" hidden>
+            <div class="vx-assign">
+                <div class="vx-assign-main" id="mapAssignBody"></div>
+                <aside class="vx-assign-side" id="assignSide"></aside>
+            </div>
+        </section>
+
+        <!-- ── People ──────────────────────────────────────────────────── -->
+        <section class="vx-page vx-page-people" data-page="people" id="vxPagePeople" hidden></section>
+
+        <!-- ── History ─────────────────────────────────────────────────── -->
+        <section class="vx-page vx-page-history" data-page="history" id="vxPageHistory" hidden></section>
+
+        <!-- ── Extract ─────────────────────────────────────────────────── -->
+        <!-- Conversations: Find's view itself, moved in while this tab is
+             shown (voices.js: vxBorrowConversations) — one view, one state -->
+        <section class="vx-page vx-page-conversations" data-page="conversations" id="vxPageConversations" hidden></section>
+        <section class="vx-page vx-page-extract" data-page="extract" id="vxPageExtract" hidden></section>
+
+        <!-- ── Help ────────────────────────────────────────────────────── -->
+        <section class="vx-page vx-page-help" data-page="help" id="vxPageHelp" hidden></section>
+    </div>
+</div>
+<!-- Library (library.js + statsview.js): the folder tree, the chosen
+     folder and what can be done with it, its statistics -->
+<div class="stv-overlay lb-overlay" id="statsOverlay">
+    <div class="stv-panel lb-panel">
+        <div class="stv-head">
+            <span class="stv-title"><svg class="ui-ico"><use href="#i-folder"/></svg>Library</span>
+            <div class="stv-crumbs" id="stvCrumbs"></div>
+            <div class="stv-scope" id="stvScope" role="group" aria-label="Scope"></div>
+            <button class="stv-icon" id="stvReload" title="Recompute">↻</button>
+            <button class="stv-icon" id="stvClose" title="Close (Esc)">✕</button>
+        </div>
+        <div class="lb-main">
+            <aside class="lb-tree">
+                <input type="text" class="lb-filter" id="lbFilter" placeholder="Find a folder …" oninput="Library.setFilter(this.value)">
+                <div class="lb-nodes" id="lbNodes"><div class="lb-empty">Loading …</div></div>
+            </aside>
+            <section class="lb-right">
+                <div class="lb-scope" id="lbScope"></div>
+                <nav class="lb-pills" id="lbPills"></nav>
+                <div class="stv-body" id="statsBody"></div>
+            </section>
+        </div>
+    </div>
+</div>
+<div class="stv-tip" id="stvTip" hidden></div>
+
+
+
+<!-- Search & Ask — one workspace in the visual system of the voices
+     workspace. The query bar serves the Hits, Files and Map tabs; "Ask" is the chat with
+     the connected model, which searches through the MCP server's tools and
+     answers with passages that play (core/chat.py, static/js/chat.js). -->
+<div class="map-overlay sv-overlay" id="svOverlay" onclick="if(event.target===this)closeSearchView()">
+    <div class="map-panel vx-panel sv-panel">
+        <div class="vx-head">
+            <span class="vx-title" id="svTitle"><svg class="ui-ico"><use href="#i-sparkle"/></svg><span id="svTitleText">Find</span></span>
+            <!-- Find first (one description, every search at once, judged by the
+                 language model — find.js); then the searches one by one
+                 (what was said, what is seen or heard, the files); then
+                 what the language model does with the library. -->
+            <nav class="vx-tabs" id="svTabs" role="tablist" aria-label="Find">
+                <button class="vx-tab active" id="svTabBtnFind" role="tab" onclick="svTab('find')"
+                        title="Describe a moment in your own words — the language model runs every search at once and checks the best"><svg class="ui-ico"><use href="#i-sparkle"/></svg>Find</button>
+                <span class="vx-tab-sep" aria-hidden="true"></span>
+                <button class="vx-tab" id="svTabBtnText" role="tab" onclick="svTab('text')"
+                        title="What was said — word by word, or by meaning (the semantic search of the transcripts)"><svg class="ui-ico"><use href="#i-captions"/></svg>Text <span class="vx-count" id="svTabNText"></span></button>
+                <button class="vx-tab" id="svTabBtnMedia" role="tab" onclick="svTab('media')"
+                        title="Images &amp; sounds: moments by what is seen or heard — a description, a hit (“Similar”) or a file of your own"><svg class="ui-ico"><use href="#i-play"/></svg>Images &amp; sounds</button>
+                <button class="vx-tab" id="svTabBtnAudio" role="tab" onclick="svTab('audio')"
+                        title="Same audio: every recording that holds a snippet — re-encoded, quieter or under noise, at the exact second — and the recordings that exist twice or contain one another"><svg class="ui-ico"><use href="#i-music"/></svg>Same audio</button>
+                <button class="vx-tab" id="svTabBtnConversations" role="tab" onclick="svTab('conversations')"
+                        title="Conversations: whole conversations — or the stretch of a long recording — by who took part and how they talked: length, sentence length, speaker changes, kind"><svg class="ui-ico"><use href="#i-conversation"/></svg>Conversations</button>
+                <button class="vx-tab" id="svTabBtnFiles" role="tab" onclick="svTab('files')"
+                        title="The files of the library — by file and folder name, with or without a transcript"><svg class="ui-ico"><use href="#i-folder"/></svg>Files</button>
+                <span class="vx-tab-sep" aria-hidden="true"></span>
+                <!-- Ask and Analyses are places of their own (the rail): the
+                     same window shows them without this tab bar -->
+                <button class="vx-tab" id="svTabBtnChat" role="tab" hidden onclick="svTab('chat')"
+                        title="Ask the assistant — it searches the library itself and answers with the passages"><svg class="ui-ico"><use href="#i-chat"/></svg>Ask</button>
+                <button class="vx-tab" id="svTabBtnDeep" role="tab" onclick="svTab('deep')"
+                        title="Deep searches — every passage where a situation happens, each one checked by the language model"><svg class="ui-ico"><use href="#i-search"/></svg>Deep search <span class="vx-count" id="svTabNDeep"></span></button>
+                <button class="vx-tab" id="svTabBtnAnalysis" role="tab" hidden onclick="svTab('analysis')"
+                        title="One task over many recordings — summarize them together, compare them, find every place where …"><svg class="ui-ico"><use href="#i-layers"/></svg>Analyses <span class="vx-count" id="svTabNAnalysis"></span></button>
+            </nav>
+            <span class="map-state" id="svTabCount"></span>
+            <button class="vx-icon" onclick="closeSearchView()" title="Close (Esc)">✕</button>
+        </div>
+
+        <!-- The question: one field for the text (its hits, recordings and map)
+             and the files (names) -->
+        <div class="sv-querybar" id="svQueryBar">
+            <div class="sv-qwrap">
+                <svg class="ui-ico"><use href="#i-search"/></svg>
+                <input type="text" class="sv-q" id="svQuery" autocomplete="off"
+                       placeholder="Search everything that was said …  (&quot;quotes&quot; = exact word)">
+            </div>
+            <!-- What is searched with. Words = the full-text index over the
+                 whole library; meaning = the vector index over its embedded
+                 part — two different sets, not two settings of one search. -->
+            <div class="vx-seg" id="svModeSeg" role="group" aria-label="Search with">
+                <button class="vx-seg-btn" data-mode="text" onclick="svSetMode('text')"
+                        title="The words as they were said — the whole library">Words</button>
+                <button class="vx-seg-btn" data-mode="both" onclick="svSetMode('both')"
+                        title="The words, and below them the passages closest in meaning">Words + meaning</button>
+                <button class="vx-seg-btn" data-mode="meaning" onclick="svSetMode('meaning')"
+                        title="Only by meaning (the embedded part of the library)">Meaning</button>
+            </div>
+            <button class="vx-btn primary sv-ask-btn" onclick="svAskAbout()"
+                    title="Ask the assistant about this — it searches by itself and answers with the passages (with the filters of this search)"><svg class="ui-ico"><use href="#i-chat"/></svg>Ask</button>
+            <!-- Deep search (deepsearch.js): the whole library for this
+                 situation, every likely passage checked by the language
+                 model — a job in the LLM queue, its own tab. -->
+            <button class="vx-btn sv-deep-btn" id="svDeepBtn" onclick="dsStartFromQuery()"
+                    title="Deep search: go through the whole library for this situation — the language model checks every likely passage one by one (runs in the LLM queue, takes minutes)">🔎 Deep search</button>
+        </div>
+        <div class="vx-toolbar sv-filters" id="svFilterBar">
+            <input type="text" class="sv-filter" id="svFileFilter" placeholder="File name contains …" autocomplete="off"
+                   title="Only files whose path contains this (* = anything)">
+            <select class="sv-select" id="svSpeaker" title="A speaker label of the diarization (per recording)"><option value="">All speaker labels</option></select>
+            <!-- People from speaker recognition: a person across the whole
+                 collection, not a label of one recording. -->
+            <select class="sv-select" id="svPerson" title="Only recordings this person speaks in">
+                <option value="">All people</option>
+            </select>
+            <label class="vx-field vx-check" id="svPersonSegmentsBox" style="display:none"
+                   title="Instead of the whole recording, only the sentences assigned to this person">
+                <input type="checkbox" id="svPersonSegments"> only their sentences
+            </label>
+            <button class="vx-btn" id="svAdvToggle" onclick="svToggleAdv()"
+                    title="Date, duration, words, speed — and the order">Filters &amp; order <span class="vx-count" id="svAdvCount"></span></button>
+            <span class="sv-pinned" id="svPinned" style="display:none"></span>
+            <span class="vx-gap"></span>
+            <span class="sv-counts"><span id="svCountHits"><b id="svTotal">0</b> <span id="svTotalNoun">hits</span> in </span><b id="svFiles">0</b> <span id="svFilesNoun">files</span> · <b id="svShown">0</b> loaded</span>
+            <!-- How the text's hits are shown. The map is the folder tree
+                 with the word hits in it (svPaneMap — reached as the 'map'
+                 tab, the text tab stays lit). -->
+            <div class="vx-seg" id="svViewBtn" role="group" aria-label="Show">
+                <button class="vx-seg-btn" data-view="hits" onclick="svSetView('hits')"
+                        title="One line per hit, the passage beside it">Hits</button>
+                <button class="vx-seg-btn" data-view="recordings" onclick="svSetView('recordings')"
+                        title="One card per recording, with the hits across its runtime">By recording</button>
+                <button class="vx-seg-btn" data-view="map" onclick="svTab('map')"
+                        title="Where the word hits are — the folder tree as a map, brighter where there are more"><svg class="ui-ico"><use href="#i-grid"/></svg>Map</button>
+            </div>
+        </div>
+        <div class="vx-toolbar sv-advbar" id="svAdvBar" style="display:none">
+            <label class="vx-field vx-check" title="Only files with a finished transcript">
+                <input type="checkbox" id="svTranscribedOnly"> transcribed only
+            </label>
+            <span class="vx-field">Recorded
+                <input type="date" id="svDateFrom" title="Recording date from">
+                –
+                <input type="date" id="svDateTo" title="Recording date to">
+            </span>
+            <span class="vx-field">Duration (min)
+                <input type="number" id="svDurationMin" min="0" step="1" placeholder="min" class="sv-adv-num">
+                –
+                <input type="number" id="svDurationMax" min="0" step="1" placeholder="max" class="sv-adv-num">
+            </span>
+            <span class="vx-field">Words
+                <input type="number" id="svWordMin" min="0" step="100" placeholder="min" class="sv-adv-num">
+                –
+                <input type="number" id="svWordMax" min="0" step="100" placeholder="max" class="sv-adv-num">
+            </span>
+            <span class="vx-field" title="Processing speed as a realtime factor (audio duration ÷ compute time)">Speed (×)
+                <input type="number" id="svTempoMin" min="0" step="1" placeholder="min" class="sv-adv-num">
+                –
+                <input type="number" id="svTempoMax" min="0" step="1" placeholder="max" class="sv-adv-num">
+            </span>
+            <span class="vx-field">Order
+                <select id="svSort" class="sv-select">
+                    <option value="">File &amp; time</option>
+                    <option value="date">Recording date</option>
+                    <option value="duration">File duration</option>
+                    <option value="size">File size</option>
+                    <option value="word_count">Word count</option>
+                    <option value="speed">Processing speed</option>
+                </select>
+                <select id="svDirection" class="sv-select">
+                    <option value="desc">descending</option>
+                    <option value="asc">ascending</option>
+                </select>
+            </span>
+            <span class="vx-gap"></span>
+            <button class="vx-btn" onclick="svAdvReset()">Reset</button>
+        </div>
+        <div class="sv-body">
+            <!-- ── Find: the question, the agent, a tile per search ────── -->
+            <div class="sv-pane fd active" id="svPaneFind">
+                <div class="fd-ask">
+                    <textarea id="fdQuery" rows="2" onkeydown="fdKey(event)" autocomplete="off"
+                              placeholder="Describe the moment in your own words — what is said, seen or heard, who is in it, what the file was called …  (Enter finds, Shift+Enter a new line)"></textarea>
+                    <div class="fd-ask-side">
+                        <button class="vx-btn primary" id="fdGo" onclick="fdRun()"><svg class="ui-ico"><use href="#i-sparkle"/></svg>Find</button>
+                        <button class="vx-btn" id="fdStop" onclick="fdStop()" hidden>⏹ Stop</button>
+                    </div>
+                </div>
+                <div class="fd-agent" id="fdAgent"></div>
+                <div class="fd-main" id="fdMain">
+                    <div class="fd-grid" id="fdGrid"></div>
+                    <aside class="fd-preview" id="fdPreview"></aside>
+                </div>
+            </div>
+            <!-- ── Text: the list on the left, the passage on the right ── -->
+            <div class="sv-pane" id="svPaneText">
+                <div class="sv-list" id="svResults"></div>
+                <!-- Draggable divider; the width is remembered, double-click resets -->
+                <div class="sv-splitter" id="svSplitter" role="separator"
+                     aria-orientation="vertical" tabindex="0"
+                     title="Drag to move · double-click resets"></div>
+                <div class="sv-read" id="svRead"></div>
+            </div>
+            <!-- ── Files ───────────────────────────────────────────────── -->
+            <div class="sv-pane" id="svPaneFiles">
+                <div class="sv-results" id="svFileList"></div>
+            </div>
+            <!-- ── Map ─────────────────────────────────────────────────── -->
+            <div class="sv-pane" id="svPaneMap"></div>
+            <!-- ── Ask: conversations · the conversation · its sources ── -->
+            <div class="sv-pane sv-chat" id="svPaneChat">
+                <aside class="sv-chat-side">
+                    <button class="vx-btn primary" onclick="chatNew()"><svg class="ui-ico"><use href="#i-chat"/></svg>New conversation</button>
+                    <div class="sv-chat-list" id="chatList"></div>
+                    <div class="sv-chat-ready" id="chatReady"></div>
+                </aside>
+                <section class="sv-chat-main">
+                    <div class="sv-chat-thread" id="chatThread"></div>
+                    <div class="sv-chat-compose">
+                        <textarea id="chatInput" rows="2" placeholder="Ask about the recordings — who said what, when, how often …"
+                                  onkeydown="chatKey(event)"></textarea>
+                        <div class="sv-chat-actions">
+                            <label class="vx-field vx-check" id="chatScopeBox"
+                                   title="Tell the assistant what the search shows: the search term and its filters">
+                                <input type="checkbox" id="chatScope"> with the search's filters <span id="chatScopeText" class="sv-chat-scope"></span>
+                            </label>
+                            <span class="vx-gap"></span>
+                            <span class="sv-chat-hint"><kbd>Enter</kbd> ask · <kbd>Shift</kbd>+<kbd>Enter</kbd> new line</span>
+                            <button class="vx-btn danger" id="chatStop" hidden onclick="chatStop()">Stop</button>
+                            <button class="vx-btn primary" id="chatSend" onclick="chatSend()">Ask</button>
+                        </div>
+                    </div>
+                </section>
+                <aside class="sv-chat-sources" id="chatSources"></aside>
+            </div>
+            <!-- ── Analyses: the list · a new one or the one chosen · its passages
+                 (core/analysis.py, static/js/analysis.js) ── -->
+            <div class="sv-pane sv-chat an-pane" id="svPaneAnalysis">
+                <aside class="sv-chat-side">
+                    <button class="vx-btn primary" onclick="anNew()"><svg class="ui-ico"><use href="#i-layers"/></svg>New analysis</button>
+                    <div class="sv-chat-list" id="anList"></div>
+                </aside>
+                <section class="sv-chat-main">
+                    <div class="an-scroll" id="anView" hidden></div>
+                    <div class="an-scroll an-form" id="anForm">
+                        <h3>New analysis</h3>
+                        <p class="an-lead">One task over many recordings — summarize them together, compare them,
+                            find every place where something happens. The language model reads every transcript
+                            of the set; the answer cites the passages, each one plays.</p>
+
+                        <div class="an-step">
+                            <div class="an-step-title"><span>1</span>Which recordings</div>
+                            <div class="vx-seg" id="anSourceSeg">
+                                <button class="vx-seg-btn" data-src="selection" onclick="anSource('selection')"
+                                        title="The files selected in the file list (tick them there, then 🧠 Analyze)">Selected in the file list <span class="vx-count" id="anSelCount"></span></button>
+                                <button class="vx-seg-btn active" data-src="folder" onclick="anSource('folder')">A folder</button>
+                                <button class="vx-seg-btn" data-src="search" onclick="anSource('search')"
+                                        title="Every recording with a hit for the search in the Hits tab, with its filters">The recordings of the search <span class="vx-count" id="anSearchCount"></span></button>
+                            </div>
+                            <div class="an-src-folder" id="anSrcFolder">
+                                <!-- The file list's path field and picker (pathpicker.js, place 'an') -->
+                                <div class="qa-path-wrap an-path-wrap">
+                                    <div class="path-field" id="anPathField">
+                                        <span class="path-field-icon">📂</span>
+                                        <input type="text" id="anFolder" placeholder="/mnt/…  —  type to filter"
+                                               autocomplete="off" spellcheck="false"
+                                               onfocus="openPathPicker('an')" oninput="onPathInput('an')" onkeydown="onPathKey(event, 'an')">
+                                        <button class="pf-btn path-star" id="anFavStar" onclick="toggleCurrentFav(event, 'an')" title="Save as favorite">☆</button>
+                                        <button class="pf-btn path-caret" onclick="togglePathPicker(event, 'an')" title="Browse folders">▾</button>
+                                    </div>
+                                    <div class="path-picker" id="anPathPicker" style="display:none">
+                                        <div class="pp-breadcrumb" id="anPpBreadcrumb"></div>
+                                        <div class="pp-body">
+                                            <div class="pp-favs" id="anPpFavs"></div>
+                                            <div class="pp-list" id="anPpList"></div>
+                                        </div>
+                                        <div class="pp-footer">
+                                            <span class="pp-hint" id="anPpHint"></span>
+                                            <button class="pp-open" onclick="ppChooseCurrent()">Choose this folder</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <label class="vx-field vx-check"><input type="checkbox" id="anRecursive" checked onchange="anPlanSoon(0)"> with its subfolders</label>
+                                <button class="vx-btn" onclick="anUseOpenFolder()" title="The folder open in the file list">📁 File list's folder</button>
+                            </div>
+                            <div class="an-src-note" id="anSrcNote"></div>
+                            <div class="an-plan" id="anPlan"></div>
+                        </div>
+
+                        <div class="an-step">
+                            <div class="an-step-title"><span>2</span>The task</div>
+                            <div class="an-presets" id="anPresets"></div>
+                            <textarea id="anTask" rows="4" oninput="anStartSync()"
+                                      placeholder="What should the model do with these recordings? — e.g. &quot;List every question about pricing, with who asks it.&quot;"></textarea>
+                        </div>
+
+                        <div class="an-step">
+                            <div class="an-step-title"><span>3</span>How</div>
+                            <div class="an-opts">
+                                <label class="vx-field" title="The order the model reads the recordings in">Order
+                                    <select id="anOrder" onchange="anPlanSoon(0)">
+                                        <option value="folder">Folder by folder</option>
+                                        <option value="name">By file name, across folders</option>
+                                        <option value="dialogue">Dialogue lines together (game files like DIA_Guard_Greeting_15_00)</option>
+                                    </select></label>
+                                <label class="vx-field vx-check" title="The speaker of every sentence — names where voices were named"><input type="checkbox" id="anSpeakers" checked onchange="anPlanSoon(0)"> Speakers</label>
+                                <label class="vx-field vx-check" title="A large set is read in parts. On: one answer is written from the notes of all parts. Off: the notes of the parts are the answer — nothing merged away."><input type="checkbox" id="anMerge" checked> One answer from all parts</label>
+                                <label class="vx-field" title="The summary task's model, or another">Model <select id="anModel"></select></label>
+                                <label class="vx-field an-title-field">Title <input type="text" id="anTitle" placeholder="from the task"></label>
+                            </div>
+                        </div>
+
+                        <div class="an-start">
+                            <button class="vx-btn primary big" id="anStartBtn" onclick="anStart()" disabled>🧠 Start the analysis</button>
+                            <span class="an-muted" id="anStartNote"></span>
+                        </div>
+                    </div>
+                </section>
+                <aside class="sv-chat-sources" id="anSources"></aside>
+            </div>
+            <!-- ── Images & sounds (mediasearch.js): stills, clips, sounds and
+                 speech of the library in one vector space (EmbeddingGemma 2),
+                 asked by a text, a hit or a file ── -->
+            <div class="sv-pane ms-pane" id="svPaneMedia">
+                <div class="ms-main">
+                    <div class="ms-bar"><span class="ms-info" id="msInfo">Loading the media index …</span></div>
+                    <div class="ms-bar ms-controls" id="msControls"></div>
+                    <div class="ms-bar ms-examples" id="msExamples"></div>
+                    <div class="ms-source" id="msSource" style="display:none"></div>
+                    <div class="ms-results" id="msResults"></div>
+                </div>
+                <div class="ms-preview" id="msPreview"><div class="sv-empty">Click a still or a sound to play that moment.</div></div>
+            </div>
+            <!-- ── Same audio: a snippet's every copy, and the duplicates the
+                 audio analysis found (api/audio.py, static/js/audiomatch.js,
+                 static/js/audiodups.js) ── -->
+            <div class="sv-pane ms-pane am-pane" id="svPaneAudio"
+                 ondragover="amDragOver(event, true)" ondragleave="amDragOver(event, false)" ondrop="amDrop(event)">
+                <div class="ms-main">
+                    <div class="ms-bar"><span class="ms-info" id="amInfo">Loading the audio analysis …</span></div>
+                    <div class="ms-source am-source" id="amSource"></div>
+                    <div class="ms-bar ms-controls" id="amViews"></div>
+                    <div class="ms-results" id="amResults"></div>
+                </div>
+                <div class="ms-preview" id="amPreview"><div class="sv-empty">Click a recording to hear the place and open it.</div></div>
+            </div>
+            <!-- ── Conversations: who talked with whom, and how — found by
+                 people, length, kind and sentence length (api/conversations.py,
+                 static/js/conversations.js); every control is drawn by the
+                 script ── -->
+            <div class="sv-pane ms-pane cv-pane" id="svPaneConversations">
+                <div class="ms-main">
+                    <div class="ms-bar"><span class="ms-info" id="cvInfo">Loading the conversation statistics …</span></div>
+                    <div class="ms-bar cv-bar" id="cvFilters"></div>
+                    <div class="ms-results cv-results" id="cvResults">
+                        <div id="cvPerson"></div>
+                        <div id="cvList"></div>
+                    </div>
+                </div>
+            </div>
+            <!-- ── Deep search: the kept ones · a new one or the one chosen
+                 (steps, confirmed passages, unclear ones) · its plan
+                 (the rag deep search API, static/js/deepsearch.js) ── -->
+            <div class="sv-pane sv-chat ds-pane" id="svPaneDeep">
+                <aside class="sv-chat-side">
+                    <button class="vx-btn primary" onclick="dsNew()"><svg class="ui-ico"><use href="#i-search"/></svg>New deep search</button>
+                    <div class="sv-chat-list" id="dsList"></div>
+                </aside>
+                <section class="sv-chat-main">
+                    <div class="an-scroll" id="dsView" hidden></div>
+                    <div class="an-scroll an-form ds-form" id="dsForm">
+                        <h3>Deep search</h3>
+                        <p class="an-lead">Every passage in the library where a situation happens — also the
+                            obscure ones, without junk in between. Describe it in a few words; the language model
+                            plans the search, the reranker orders every candidate, and the model checks the likely
+                            ones one at a time. Only what it confirmed is listed.</p>
+                        <div class="ds-form-row">
+                            <input type="text" id="dsQuery" autocomplete="off" maxlength="500"
+                                   placeholder="The situation — e.g. &quot;Alice gets a compliment&quot;, &quot;someone apologizes for being late&quot;"
+                                   onkeydown="dsFormKey(event)">
+                            <button class="vx-btn primary big" id="dsStartBtn" onclick="dsFormStart()">🔎 Start the deep search</button>
+                        </div>
+                        <p class="an-muted ds-form-note">It runs in the LLM queue, on the server, and takes minutes —
+                            close this any time; the result is kept on the left.</p>
+                    </div>
+                </section>
+                <aside class="sv-chat-sources" id="dsPlan"></aside>
+            </div>
+        </div>
+        <!-- Background playback. The player (#videoPlayer) lives outside this
+             overlay and keeps running while the search stays open — this
+             bar is the remote control for it. -->
+        <div class="sv-playback" id="svPlayer" style="display:none">
+            <button class="sv-wg-btn" id="svWgButton" onclick="svWgToggle()"
+                    title="Pause / resume">⏸</button>
+            <span class="sv-wg-file" id="svWgFile"></span>
+            <span class="sv-wg-time" id="svWgTime">0:00</span>
+            <input type="range" class="sv-wg-bar" id="svWgBar"
+                   min="0" max="1000" value="0" step="1"
+                   oninput="svWgJump(this.value)" title="Position">
+            <button class="sv-wg-action" onclick="svWgInTranscript()"
+                    title="Close search and open the spot in the transcript">↗ in transcript</button>
+            <button class="sv-wg-action" onclick="svWgStop()" title="Stop playback">✕</button>
+        </div>
+    </div>
+</div>
+
+<!-- Hit map (treemap, WinDirStat principle) -->
+<div class="sm-overlay" id="smOverlay">
+    <div class="sm-panel">
+        <div class="sm-head">
+            <span class="sm-title">⛶ HIT MAP</span>
+            <span class="sm-query" id="smQuery"></span>
+            <span class="sm-hint" id="smHint" style="display:none"></span>
+            <span class="sm-info" id="smInfo"></span>
+            <button class="sm-view-btn" id="smViewBtn" onclick="smToggleView()"
+                    title="Toggle between map and list">☰ List</button>
+            <button class="sv-close" onclick="closeSearchMap()">✕</button>
+        </div>
+        <div class="sm-crumbs" id="smCrumbs"></div>
+        <div class="sm-timeline" id="smTimeline" style="display:none"></div>
+        <div class="sm-canvas" id="smCanvas"></div>
+        <div class="sm-legend">
+            Area = hit count · click zooms in (folder → file) · inside a file the
+            timeline shows the distribution, with the transcript below it · right-click or
+            <kbd>Backspace</kbd> to go back · click on a segment jumps into the transcript
+        </div>
+    </div>
+</div>
+
+<!-- Help Panel -->
+<!-- Help & setup (help.js): where is what, how-tos, keys, and the setup
+     guide (setupguide.js, moved into its tab) -->
+<div class="settings-overlay" id="helpOverlay" onclick="if(event.target===this)closeHelp()">
+    <div class="set-panel help-panel" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+        <div class="set-head">
+            <span class="set-title" id="helpTitle"><svg class="ui-ico" aria-hidden="true"><use href="#i-help"/></svg>Help &amp; setup</span>
+            <nav class="vx-tabs help-tabs" id="helpTabs" role="tablist" aria-label="Help &amp; setup">
+                <button class="vx-tab" data-tab="where" role="tab" onclick="Help.tab('where')"
+                        title="Every place, window and tab — and what it is for"><svg class="ui-ico"><use href="#i-grid"/></svg>Where is what</button>
+                <button class="vx-tab" data-tab="howto" role="tab" onclick="Help.tab('howto')"
+                        title="The first steps and the usual ways of working"><svg class="ui-ico"><use href="#i-book"/></svg>How-tos</button>
+                <button class="vx-tab" data-tab="keys" role="tab" onclick="Help.tab('keys')"
+                        title="Keyboard shortcuts"><svg class="ui-ico"><use href="#i-code"/></svg>Keys</button>
+                <button class="vx-tab" data-tab="setup" role="tab" id="btnHelpSetup" onclick="Help.tab('setup')"
+                        title="Setup: system check, speaker diarization, first steps, internal docs, API reference"><svg class="ui-ico"><use href="#i-guide"/></svg>Setup</button>
+            </nav>
+            <span class="set-head-gap"></span>
+            <button type="button" class="set-icon" onclick="closeHelp()" title="Close (Esc)" aria-label="Close">✕</button>
+        </div>
+        <div class="set-content help-page" data-page="where" id="helpWhere"></div>
+        <div class="set-content help-page" data-page="howto" id="helpContent" hidden></div>
+        <div class="set-content help-page" data-page="keys" id="helpKeys" hidden></div>
+        <div class="help-page help-setup" data-page="setup" id="helpSetup" hidden></div>
+    </div>
+</div>
+
+<div class="pv-tip" id="perfTip" hidden></div>
+
+<!-- Setup guide (setupguide.js): opens by itself on a fresh installation -->
+<div class="settings-overlay" id="setupOverlay" onclick="if(event.target===this)closeSetupGuide()">
+    <div class="set-panel sg-panel" role="dialog" aria-modal="true" aria-labelledby="sgHeadTitle">
+        <div class="set-head">
+            <span class="set-title" id="sgHeadTitle"><svg class="ui-ico" aria-hidden="true"><use href="#i-guide"/></svg>Setup guide</span>
+            <span class="set-head-gap"></span>
+            <button type="button" class="set-icon" onclick="closeSetupGuide()" title="Close (Esc)" aria-label="Close">✕</button>
+        </div>
+        <div class="set-main">
+            <nav class="set-nav" aria-label="Setup guide pages"><div id="sgNav"></div></nav>
+            <div class="set-content" id="sgContent"></div>
+        </div>
+    </div>
+</div>
+
+<!-- (The earlier separate "Global statistics" overlay has merged into
+     #statsOverlay — global there simply means the call without a path.) -->
+
+<!-- Settings (settings.js: shell, rows, saving, search · settings_pages.js:
+     the pages · settings_tools.js: the live parts inside them) -->
+<div class="settings-overlay" id="settingsOverlay" onclick="if(event.target===this)closeSettings()">
+    <div class="set-panel" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+        <div class="set-head">
+            <span class="set-title" id="settingsTitle"><svg class="ui-ico" aria-hidden="true"><use href="#i-settings"/></svg>Settings</span>
+            <div class="set-search">
+                <svg class="set-search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <input type="text" id="settingsSearch" placeholder="Search all settings" autocomplete="off" spellcheck="false"
+                       aria-label="Search all settings" title="Search all settings — shortcut: / or Ctrl+F"
+                       oninput="settingsSearch(this.value)" onkeydown="_settingsSearchKey(event)">
+                <button type="button" class="set-search-clear" id="settingsSearchClear" hidden
+                        onclick="_settingsSearchReset(); document.getElementById('settingsSearch').focus()"
+                        title="Clear the search (Esc)" aria-label="Clear the search">✕</button>
+            </div>
+            <span class="set-head-gap"></span>
+            <span class="set-unsaved" id="settingsUnsaved" hidden></span>
+            <button type="button" class="set-btn" id="settingsDiscard" onclick="discardSettings()" hidden
+                    title="Throw away the changes and show the saved values">Discard</button>
+            <button type="button" class="set-btn primary" id="settingsSave" onclick="saveSettings()" disabled>💾 Save</button>
+            <button type="button" class="set-icon" onclick="closeSettings()" title="Close (Esc)" aria-label="Close">✕</button>
+        </div>
+        <div class="set-main">
+            <nav class="set-nav" aria-label="Settings pages">
+                <div id="settingsNavItems"></div>
+                <div class="set-version" id="appVersion" title="Code state (version + git commit) — please include with error reports">Whisper Transcription Manager</div>
+            </nav>
+            <div class="set-content" id="settingsContent">
+                <div class="set-notes" id="settingsNotes"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summarize Modal -->
+<!-- Folder batch: all transcripts of a folder at once -->
+<div class="modal-bg" id="folderLlmModal">
+    <div class="modal" style="max-width:720px;width:92vw">
+        <h3>📁 Process whole folder</h3>
+        <p style="font-size:0.78rem;color:var(--tx-3);margin:4px 0 10px">
+            Selects all files in the current directory that already have a
+            transcript, and queues them into the LLM queue. It's processed
+            sequentially — you can close the browser in the meantime.
+        </p>
+        <div class="llm-group">
+            <div class="llm-row">
+                <div class="llm-field">
+                    <label>Task</label>
+                    <select id="folderLlmKind" onchange="_folderLlmTypeSwitch()">
+                        <option value="summary">🤖 Summarize</option>
+                        <option value="translation">🌐 Translate</option>
+                        <option value="correction">🪄 Correct</option>
+                    </select>
+                </div>
+                <div class="llm-field" id="folderLlmLanguageWrap" style="display:none">
+                    <label>Target language</label>
+                    <select id="folderLlmLanguage" onchange="_checkFolderLlm()">
+                        <option value="English">English</option>
+                        <option value="German">German</option>
+                        <option value="Japanese">Japanese</option>
+                        <option value="_free">Other…</option>
+                    </select>
+                    <input type="text" id="folderLlmLanguageFree" placeholder="e.g. Polish" style="width:130px;margin-left:6px">
+                </div>
+                <div class="llm-field" id="folderLlmPresetWrap">
+                    <label>Template</label>
+                    <select id="folderLlmPreset" onchange="_checkFolderLlm()">
+                        <option value="">— default template —</option>
+                    </select>
+                </div>
+                <div class="llm-field" style="flex:0 0 190px">
+                    <label>Model</label>
+                    <select id="folderLlmModel" style="width:100%"></select>
+                </div>
+            </div>
+            <div class="llm-row" style="margin-top:8px">
+                <div class="llm-field" style="flex:1">
+                    <label>Subfolder (empty = everything)</label>
+                    <input type="text" id="folderLlmSub" placeholder="e.g. videos/archive"
+                           style="width:100%" onchange="_checkFolderLlm()">
+                </div>
+                <label class="llm-check"><input type="checkbox" id="folderLlmRecursive" checked
+                    onchange="_checkFolderLlm()"> Include subfolders</label>
+                <label class="llm-check"><input type="checkbox" id="folderLlmSkip" checked
+                    onchange="_checkFolderLlm()"> Skip existing</label>
+            </div>
+            <div id="folderLlmPreview" style="margin-top:10px"></div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+            <button class="tx-act-btn" onclick="closeFolderLlmModal()">Cancel</button>
+            <button class="llm-btn-primary" id="btnFolderLlmStart" onclick="startFolderLlm()">📁 Queue it</button>
+        </div>
+    </div>
+</div>
+
+<!-- Export (export.js): the open recording or any set of recordings, in
+     every text, subtitle, document, video and audio format -->
+<div class="stv-overlay ex-overlay" id="exportOverlay" onclick="if(event.target===this)Export.close()">
+    <div class="stv-panel ex-panel" role="dialog" aria-label="Export">
+        <div class="stv-head ex-head">
+            <span class="stv-title"><svg class="ui-ico"><use href="#i-download"/></svg>Export</span>
+            <nav class="vx-tabs" id="exTabs" role="tablist" aria-label="Export">
+                <button class="vx-tab" data-tab="one" role="tab" onclick="Export.setTab('one')" title="The open recording">This file</button>
+                <button class="vx-tab" data-tab="many" role="tab" onclick="Export.setTab('many')" title="Folders, or recordings picked in them">Multiple files</button>
+            </nav>
+            <span style="flex:1"></span>
+            <button class="stv-icon" onclick="Export.close()" title="Close (Esc)">✕</button>
+        </div>
+        <div class="ex-main">
+            <section class="ex-scope">
+                <div id="exOne"></div>
+                <div id="exMany" class="ex-many" hidden>
+                    <div class="ex-tree" id="exTree" role="tree" aria-label="Library folders"></div>
+                    <div class="ex-list">
+                        <div class="ex-filters" id="exManyFilters"></div>
+                        <div class="ex-files-head" id="exFilesHead"></div>
+                        <div class="ex-files" id="exFiles" role="listbox" aria-multiselectable="true" aria-label="Recordings"
+                             title="Click picks one · Ctrl+click adds · Shift+click picks a range"></div>
+                    </div>
+                </div>
+            </section>
+            <section class="ex-right">
+                <div class="ex-formats" id="exFormats" role="radiogroup" aria-label="Format"></div>
+                <div class="ex-sub" id="exSub" hidden></div>
+                <details class="ex-opts" id="exOpts"><summary id="exOptsSum"></summary><div class="ex-opts-body" id="exOptsBody"></div></details>
+                <div class="ex-presets" id="exPresets"></div>
+                <div class="ex-prev">
+                    <div class="ex-prev-head" id="exPrevHead">Preview</div>
+                    <pre class="ex-preview" id="exPreview"></pre>
+                </div>
+            </section>
+        </div>
+        <div class="ex-jobs" id="exJobs" hidden></div>
+        <div class="ex-foot">
+            <span class="ex-count" id="exCount"></span>
+            <span class="ex-status" id="exStatus" role="status" aria-live="polite"></span>
+            <span style="flex:1"></span>
+            <button class="tb-btn" id="exCopy" onclick="Export.copy()" hidden title="Copy the text instead of downloading it">Copy</button>
+            <button class="ex-go" id="exGo" onclick="Export.run()" disabled>Download</button>
+        </div>
+    </div>
+</div>
+
+<!-- LLM correction: confidence-guided suggestions, full review
+     (suggestions / rejected with reason / reviewed) -->
+<div class="modal-bg" id="correctionModal">
+    <div class="modal" style="max-width:980px;width:92vw;max-height:92vh;overflow-y:auto">
+        <h3>🪄 Transcript correction</h3>
+        <p style="font-size:0.78rem;color:var(--tx-3);margin:4px 0 10px">
+            The LLM checks segments with uncertain speech recognition (word scores from the
+            alignment) and suggests conservative corrections. Every suggestion goes through
+            validation — and nothing is changed without your review.
+        </p>
+        <div class="llm-group">
+            <div class="llm-group-title">New run</div>
+            <div class="llm-row">
+                <label class="llm-check">
+                    <input type="checkbox" id="corrOnlySelected" checked>
+                    Only check flagged segments
+                </label>
+                <div class="llm-field">
+                    <label>Score threshold</label>
+                    <input type="number" id="corrScore" placeholder="0.40" min="0" max="1" step="0.05" style="width:80px">
+                </div>
+                <div class="llm-field" style="flex:0 1 auto;min-width:220px;max-width:100%">
+                    <label>Model</label>
+                    <select id="corrModel" style="min-width:220px;max-width:100%"></select>
+                </div>
+                <span style="flex:1"></span>
+                <button class="llm-btn-primary" id="btnCorrStart" onclick="startCorrection()">🪄 Generate suggestions</button>
+                <button class="tx-act-btn tx-act-danger" id="btnCorrCancel" style="display:none" onclick="cancelCorrection()">✕ Cancel</button>
+            </div>
+            <div class="llm-progress" id="corrProgress" style="display:none">
+                <div class="llm-progress-bar"><div class="llm-progress-fill"></div></div>
+                <div class="llm-progress-text"></div>
+            </div>
+            <div id="corrSteps"></div>
+        </div>
+        <div id="corrResult"></div>
+        <div id="corrHistory"></div>
+        <div style="text-align:right;margin-top:12px">
+            <button class="tx-act-btn" onclick="closeCorrectionModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- LLM translation: separate track per language, switchable in the
+     transcript view (view switcher) -->
+<div class="modal-bg" id="translateModal">
+    <div class="modal" style="max-width:880px;width:92vw;max-height:92vh;overflow-y:auto">
+        <h3>🌐 Translate transcript</h3>
+        <p style="font-size:0.78rem;color:var(--tx-3);margin:4px 0 10px">
+            Translates chunk-wise with consistency context. Each language is stored as its own
+            track in the database — switchable directly in the
+            transcript view (🌐 tab) and as player subtitles.
+        </p>
+        <div class="llm-group">
+            <div class="llm-group-title">Existing translations</div>
+            <div id="transList"></div>
+        </div>
+        <div class="llm-group">
+            <div class="llm-group-title">New translation</div>
+            <div class="llm-row">
+                <div class="llm-field">
+                    <label>Target language</label>
+                    <select id="transLanguage" onchange="document.getElementById('transLanguageFree').style.display = this.value==='_free' ? '' : 'none'">
+                        <option value="English">English</option>
+                        <option value="German">German</option>
+                        <option value="Japanese">Japanese</option>
+                        <option value="French">French</option>
+                        <option value="Spanish">Spanish</option>
+                        <option value="_free">Other…</option>
+                    </select>
+                    <input type="text" id="transLanguageFree" placeholder="e.g. Polish" style="display:none;width:140px;margin-left:6px">
+                </div>
+                <div class="llm-field" style="flex:0 1 auto;min-width:220px;max-width:100%">
+                    <label>Model</label>
+                    <select id="transModel" style="min-width:220px;max-width:100%"></select>
+                </div>
+                <span style="flex:1"></span>
+                <button class="llm-btn-primary" id="btnTransStart" onclick="startTranslation()">🌐 Translate</button>
+                <button class="tx-act-btn tx-act-danger" id="btnTransCancel" style="display:none" onclick="cancelTranslation()">✕ Cancel</button>
+            </div>
+            <div class="llm-progress" id="transProgress" style="display:none">
+                <div class="llm-progress-bar"><div class="llm-progress-fill"></div></div>
+                <div class="llm-progress-text"></div>
+            </div>
+            <div id="transSteps"></div>
+            <div id="transResult"></div>
+        </div>
+        <div style="text-align:right;margin-top:12px">
+            <button class="tx-act-btn" onclick="closeTranslateModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Summarize dialog: left what the LLM gets (source, template = system
+     prompt, always in view, an instruction for this run), right what comes
+     back (result, the exact LLM input, saved summaries). Near full screen:
+     the template is the part people read and edit, so it gets the room. -->
+<div class="modal-bg" id="summarizeModal">
+    <div class="modal sum-modal" role="dialog" aria-labelledby="sumTitle">
+        <div class="sum-head">
+            <h3 id="sumTitle">🤖 Summarize transcript</h3>
+            <span class="sum-file" id="sumFileName"></span>
+            <span class="sum-grow"></span>
+            <button class="sum-x" onclick="closeSummarizeModal()" aria-label="Close"
+                    title="Close (Esc) — a running summary keeps going and saves itself">✕</button>
+        </div>
+        <div class="sum-body">
+            <section class="sum-pane sum-in">
+                <div class="sum-card">
+                    <div class="sum-card-title">Source — what the LLM reads</div>
+                    <div class="sum-row">
+                        <select id="sumSource" class="sum-select" onchange="_onSumSourceChange()"
+                                aria-label="Language version">
+                            <option value="">📄 Original transcript</option>
+                        </select>
+                        <label class="llm-check"><input type="checkbox" id="sumSpeakers"
+                            onchange="_sumInputsChanged()"> Speakers</label>
+                        <label class="llm-check"><input type="checkbox" id="sumTimestamps" checked
+                            onchange="_sumInputsChanged()"> Timestamps</label>
+                    </div>
+                    <div class="sum-meta" id="sumMeta">
+                        <span class="sum-meta-label">Metadata</span>
+                        <button type="button" class="sum-toggle" data-meta="filename" aria-pressed="true">File name</button>
+                        <button type="button" class="sum-toggle" data-meta="duration" aria-pressed="true">Duration</button>
+                        <button type="button" class="sum-toggle" data-meta="language" aria-pressed="false">Language</button>
+                        <button type="button" class="sum-toggle" data-meta="model" aria-pressed="false">Whisper model</button>
+                        <button type="button" class="sum-toggle" data-meta="date" aria-pressed="false">Date</button>
+                        <button type="button" class="sum-toggle" data-meta="speakers" aria-pressed="false">Speaker list</button>
+                    </div>
+                </div>
+
+                <div class="sum-card sum-prompt">
+                    <div class="sum-card-title">Instruction</div>
+                    <div class="sum-row">
+                        <label class="sum-lbl" for="sumPreset">Template</label>
+                        <select id="sumPreset" class="sum-select sum-grow" onchange="_onPresetChange()"></select>
+                        <span class="sum-badge" id="sumEdited" hidden title="The system prompt differs from the template — only for this run, until you save it">edited</span>
+                        <button class="tx-act-btn" id="btnSumReset" onclick="_sumResetPrompt()" hidden
+                                title="Back to the template's text">↺ Reset</button>
+                        <button class="tx-act-btn" id="btnSumUndo" onclick="_sumUndoSwitch()" hidden
+                                title="Switching the template replaced your edited text — bring it back">↶ My edit</button>
+                        <button class="tx-act-btn" id="btnSumSaveTpl" onclick="_sumSaveTplOpen()"
+                                title="Keep this system prompt as a template">💾 Save as template</button>
+                    </div>
+                    <div class="sum-savetpl" id="sumSaveTpl" hidden>
+                        <input type="text" id="sumTplName" class="sum-input sum-grow" maxlength="80"
+                               placeholder="Template name" oninput="_sumTplNameInput()"
+                               onkeydown="if (event.key === 'Enter') _sumSaveTpl(); if (event.key === 'Escape') { event.stopPropagation(); _sumSaveTplClose(); }">
+                        <button class="llm-btn-primary" id="btnSumTplSave" onclick="_sumSaveTpl()">Save</button>
+                        <button class="tx-act-btn" onclick="_sumSaveTplClose()">Cancel</button>
+                        <span class="sum-savetpl-note" id="sumTplNote"></span>
+                    </div>
+                    <div class="sum-sys-head">
+                        <label for="sumSysPrompt">System prompt</label>
+                        <span class="sum-count" id="sumSysCount"></span>
+                    </div>
+                    <textarea id="sumSysPrompt" class="sum-sys" spellcheck="false"
+                              oninput="_sumSysInput()" placeholder="Empty = no system prompt"></textarea>
+                    <div class="sum-hints" id="sumHints"></div>
+                    <label class="sum-lbl sum-extra-lbl" for="sumPrompt">Additional instruction
+                        <small>only for this run — goes after the transcript</small></label>
+                    <textarea id="sumPrompt" class="sum-extra" rows="2" oninput="_sumInputsChanged()"
+                              placeholder="e.g. &ldquo;only the decisions&rdquo; or &ldquo;focus on the second half&rdquo;"></textarea>
+                </div>
+
+                <div class="sum-card sum-run">
+                    <div class="sum-row">
+                        <label class="sum-lbl" for="sumModel">Model</label>
+                        <select id="sumModel" class="sum-select sum-grow" onchange="_sumInputsChanged()"></select>
+                    </div>
+                    <div class="sum-tokens" id="sumTokenInfo"></div>
+                    <div class="sum-row sum-go">
+                        <span class="sum-kbd">Ctrl+Enter</span>
+                        <span class="sum-grow"></span>
+                        <button class="tx-act-btn tx-act-danger" id="btnSumStop" hidden onclick="stopSummarize()">■ Stop</button>
+                        <button class="llm-btn-primary" id="btnSumGo" onclick="doSummarize()">🤖 Summarize</button>
+                    </div>
+                    <div class="llm-progress" id="sumProgress" hidden>
+                        <div class="llm-progress-bar"><div class="llm-progress-fill"></div></div>
+                        <div class="llm-progress-text"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="sum-pane sum-out">
+                <div class="sum-tabs" role="tablist">
+                    <button class="sum-tab active" role="tab" id="sumTabResult" onclick="_sumTab('result')">Result</button>
+                    <button class="sum-tab" role="tab" id="sumTabInput" onclick="_sumTab('input')"
+                            title="Exactly what goes to the LLM">LLM input</button>
+                    <button class="sum-tab" role="tab" id="sumTabSaved" onclick="_sumTab('saved')">Saved <span class="sum-tab-n" id="sumSavedCount"></span></button>
+                    <span class="sum-grow"></span>
+                    <button class="tx-act-btn" id="btnSumCopy" onclick="_sumCopy()" title="Copy the text shown">📋 Copy</button>
+                    <button class="llm-btn-primary" id="btnSumSave" onclick="saveSummary()" hidden>💾 Save</button>
+                </div>
+                <div class="sum-tabpane" id="sumPaneResult" role="tabpanel">
+                    <div id="sumError"></div>
+                    <div class="sum-viewing" id="sumViewing" hidden></div>
+                    <div id="sumResult" class="sum-result sum-result-md"></div>
+                    <div class="sum-stats" id="sumStats"></div>
+                </div>
+                <div class="sum-tabpane" id="sumPaneInput" role="tabpanel" hidden>
+                    <pre id="sumDebugContent" class="sum-debug"></pre>
+                </div>
+                <div class="sum-tabpane" id="sumPaneSaved" role="tabpanel" hidden>
+                    <div id="sumSavedList" class="sum-saved"></div>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<!-- Find & Replace Modal -->
+<div class="modal-bg" id="findReplaceModal">
+    <div class="modal" style="max-width:520px">
+        <h3>✏️ Find & replace</h3>
+        <div class="field">
+            <label>Find</label>
+            <input type="text" id="frFind" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-0);color:var(--tx-1);font-size:0.88rem;font-family:inherit" placeholder="Wrong word…" oninput="_frPreview()">
+        </div>
+        <div class="field">
+            <label>Replace with</label>
+            <input type="text" id="frReplace" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-0);color:var(--tx-1);font-size:0.88rem;font-family:inherit" placeholder="Correct word…" oninput="_frPreview()">
+        </div>
+        <div class="field" style="display:flex;gap:16px;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.82rem">
+                <input type="checkbox" id="frCaseSensitive" style="width:14px;height:14px" onchange="_frPreview()">
+                Case-sensitive
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.82rem">
+                <input type="checkbox" id="frWholeWord" style="width:14px;height:14px" onchange="_frPreview()">
+                Whole word
+            </label>
+        </div>
+        <div id="frPreview" style="display:none;padding:10px 12px;background:var(--bg-0);border:1px solid var(--border);border-radius:6px;max-height:200px;overflow-y:auto;font-size:0.82rem;line-height:1.6;margin-bottom:8px"></div>
+        <div id="frStatus" style="font-size:0.78rem;color:var(--tx-3);margin-bottom:8px"></div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeFindReplace()">Cancel</button>
+            <button class="btn-go" id="btnFrGo" onclick="doFindReplace()" disabled>✏️ Replace all</button>
+        </div>
+    </div>
+</div>
+
+<!-- JS Modules (load order matters: core first, state, app last) -->
+<script src="/static/vendor/plyr/plyr.min.js?v={{ v }}"></script>
+<script src="/static/js/core.js?v={{ v }}"></script>
+<script src="/static/js/player.js?v={{ v }}"></script>
+<script src="/static/js/state.js?v={{ v }}"></script>
+<script src="/static/js/txoptions.js?v={{ v }}"></script>
+<script src="/static/js/connstatus.js?v={{ v }}"></script>
+<script src="/static/js/index.js?v={{ v }}"></script>
+<script src="/static/js/directory.js?v={{ v }}"></script>
+<script src="/static/js/pathpicker.js?v={{ v }}"></script>
+<script src="/static/js/stats.js?v={{ v }}"></script>
+<script src="/static/js/filelist.js?v={{ v }}"></script>
+<script src="/static/js/batch.js?v={{ v }}"></script>
+<script src="/static/js/queue_editor.js?v={{ v }}"></script>
+<script src="/static/js/library_select.js?v={{ v }}"></script>
+<script src="/static/js/queue_add.js?v={{ v }}"></script>
+<script src="/static/js/fileview.js?v={{ v }}"></script>
+<script src="/static/js/speaker.js?v={{ v }}"></script>
+<script src="/static/js/transcribe.js?v={{ v }}"></script>
+<script src="/static/js/fileactions.js?v={{ v }}"></script>
+<script src="/static/js/transcripts.js?v={{ v }}"></script>
+<script src="/static/js/searchview.js?v={{ v }}"></script>
+<script src="/static/js/mediasearch.js?v={{ v }}"></script>
+<script src="/static/js/audiomatch.js?v={{ v }}"></script>
+<script src="/static/js/audiodups.js?v={{ v }}"></script>
+<script src="/static/js/conversations.js?v={{ v }}"></script>
+<script src="/static/js/find.js?v={{ v }}"></script>
+<script src="/static/js/chat.js?v={{ v }}"></script>
+<script src="/static/js/analysis.js?v={{ v }}"></script>
+<script src="/static/js/deepsearch.js?v={{ v }}"></script>
+<script src="/static/js/autoscan.js?v={{ v }}"></script>
+<script src="/static/js/searchmap.js?v={{ v }}"></script>
+<script src="/static/js/search.js?v={{ v }}"></script>
+<script src="/static/js/upload.js?v={{ v }}"></script>
+<script src="/static/js/export.js?v={{ v }}"></script>
+<script src="/static/js/clip.js?v={{ v }}"></script>
+<script src="/static/js/clips.js?v={{ v }}"></script>
+<script src="/static/js/summarize.js?v={{ v }}"></script>
+<script src="/static/js/llmtools.js?v={{ v }}"></script>
+<script src="/static/js/editor.js?v={{ v }}"></script>
+<script src="/static/js/settings.js?v={{ v }}"></script>
+<script src="/static/js/settings_pages.js?v={{ v }}"></script>
+<script src="/static/js/settings_tools.js?v={{ v }}"></script>
+<script src="/static/js/settings_media.js?v={{ v }}"></script>
+<script src="/static/js/settings_audio.js?v={{ v }}"></script>
+<script src="/static/js/statsview.js?v={{ v }}"></script>
+<script src="/static/js/voicemap.js?v={{ v }}"></script>
+<script src="/static/js/voicemap_graph.js?v={{ v }}"></script>
+<script src="/static/js/voicemap_panel.js?v={{ v }}"></script>
+<script src="/static/js/voicemap_assign.js?v={{ v }}"></script>
+<script src="/static/js/voicemap_tiles.js?v={{ v }}"></script>
+<script src="/static/js/voices.js?v={{ v }}"></script>
+<script src="/static/js/voices_history.js?v={{ v }}"></script>
+<script src="/static/js/voices_people.js?v={{ v }}"></script>
+<script src="/static/js/voices_review.js?v={{ v }}"></script>
+<script src="/static/js/voices_help.js?v={{ v }}"></script>
+<script src="/static/js/voices_clipedit.js?v={{ v }}"></script>
+<script src="/static/js/voices_extract.js?v={{ v }}"></script>
+<script src="/static/js/health.js?v={{ v }}"></script>
+<script src="/static/js/help.js?v={{ v }}"></script>
+<script src="/static/js/setupguide.js?v={{ v }}"></script>
+<script src="/static/js/perfview.js?v={{ v }}"></script>
+<script src="/static/js/app.js?v={{ v }}"></script>
+<script src="/static/js/shell.js?v={{ v }}"></script>
+<script src="/static/js/home.js?v={{ v }}"></script>
+<script src="/static/js/pins.js?v={{ v }}"></script>
+<script src="/static/js/queue_page.js?v={{ v }}"></script>
+<script src="/static/js/machine.js?v={{ v }}"></script>
+<script src="/static/js/filterpanel.js?v={{ v }}"></script>
+<script src="/static/js/recording.js?v={{ v }}"></script>
+<script src="/static/js/library.js?v={{ v }}"></script>
+</body>
+</html>

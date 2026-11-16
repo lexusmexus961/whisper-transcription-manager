@@ -1,0 +1,122 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   Performance view (perfview.js) — small multiples on one time axis.
+   Marks follow the chart rules used elsewhere: 2 px lines, a ~10 % area
+   wash, hairline solid grid, text in text tokens (never the series color).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.pv-body { flex:1; overflow-y:auto; padding:16px 20px 20px; transition:opacity 0.15s; }
+.pv-body.loading { opacity:0.55; }
+
+/* One row of controls above the charts: range presets first */
+.pv-controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+.pv-seg { display:flex; }
+.pv-seg button {
+    padding:5px 12px; background:var(--bg-0); border:1px solid var(--border); border-left:none;
+    color:var(--tx-2); font-family:var(--font-mono); font-size:0.72rem; cursor:pointer;
+}
+.pv-seg button:first-child { border-left:1px solid var(--border); border-radius:7px 0 0 7px; }
+.pv-seg button:last-child { border-radius:0 7px 7px 0; }
+.pv-seg button:hover { color:var(--tx-1); background:var(--bg-3); }
+.pv-seg button.active { color:var(--accent); background:var(--accent-g); }
+/* Live: a dot that pulses while the charts follow the clock */
+.pv-seg .pv-live-btn::before {
+    content:''; display:inline-block; width:6px; height:6px; border-radius:50%;
+    background:currentColor; margin-right:6px; vertical-align:1px; opacity:0.55;
+}
+.pv-seg .pv-live-btn.active::before { opacity:1; animation:pv-pulse 1.6s ease-in-out infinite; }
+@keyframes pv-pulse { 50% { opacity:0.25; } }
+@media (prefers-reduced-motion: reduce) { .pv-seg .pv-live-btn.active::before { animation:none; } }
+.pv-live-err { color:var(--orange); }
+.pv-reset {
+    padding:5px 11px; border-radius:7px; background:var(--bg-3); border:1px solid var(--border);
+    color:var(--tx-1); font-family:inherit; font-size:0.74rem; cursor:pointer;
+}
+.pv-reset:hover { border-color:var(--accent); color:var(--accent); }
+.pv-span { font-size:0.74rem; color:var(--tx-3); }
+.pv-legend { margin-left:auto; display:flex; align-items:center; gap:6px; font-size:0.72rem; color:var(--tx-3); }
+.pv-key-line { display:inline-block; width:14px; height:2px; background:var(--accent); border-radius:1px; }
+.pv-key-band { display:inline-block; width:14px; height:9px; background:var(--accent); opacity:0.22; border-radius:2px; margin-left:6px; }
+.pv-note, .pv-hint { font-size:0.74rem; color:var(--tx-3); margin:0 0 10px; }
+.pv-hint { margin-top:4px; }
+.pv-empty { padding:40px 20px; text-align:center; color:var(--tx-3); font-size:0.86rem; line-height:1.6; }
+
+/* One chart */
+.pv-chart { margin-bottom:6px; }
+.pv-chart-head { display:flex; align-items:baseline; gap:10px; padding-left:46px; margin-bottom:2px; }
+.pv-chart-title { font-size:0.72rem; font-weight:700; letter-spacing:0.5px; color:var(--tx-2); text-transform:uppercase; }
+.pv-chart-now { font-size:0.82rem; color:var(--tx-1); font-weight:600; }
+.pv-dim { color:var(--tx-3); font-weight:400; }
+.pv-chart svg { display:block; overflow:visible; user-select:none; }
+.pv-grid { stroke:var(--border); stroke-width:1; shape-rendering:crispEdges; }
+.pv-ytick { fill:var(--tx-3); font-size:10px; text-anchor:end; font-family:var(--font-mono); }
+.pv-xtick { fill:var(--tx-3); font-size:10px; text-anchor:middle; font-family:var(--font-mono); }
+.pv-line { fill:none; stroke:var(--accent); stroke-width:2; stroke-linejoin:round; stroke-linecap:round; }
+.pv-area { fill:var(--accent); opacity:0.1; }
+.pv-band { fill:var(--accent); opacity:0.22; }
+.pv-dot { fill:var(--accent); }
+.pv-cross { stroke:var(--tx-2); stroke-width:1; pointer-events:none; }
+.pv-hdot { fill:var(--accent); stroke:var(--bg-2); stroke-width:2; pointer-events:none; }
+.pv-sel { fill:var(--accent); opacity:0.12; pointer-events:none; }
+.pv-hit { fill:transparent; cursor:crosshair; touch-action:none; }
+
+/* Tooltip */
+.pv-tip {
+    position:fixed; z-index:970; pointer-events:none; min-width:160px;
+    background:var(--bg-1); border:1px solid var(--border-h); border-radius:8px;
+    padding:8px 10px; box-shadow:0 8px 24px rgba(0,0,0,0.5); font-size:0.76rem;
+}
+.pv-tip-time { color:var(--tx-3); font-size:0.7rem; margin-bottom:4px; }
+.pv-tip-row { display:flex; align-items:center; gap:6px; line-height:1.6; }
+.pv-tip-row b { color:var(--tx-1); font-weight:600; min-width:52px; }
+.pv-tip-label { color:var(--tx-2); }
+
+/* Table view */
+/* VRAM by source: the stacked chart, its legend, the live list */
+.pv-stack { opacity:0.5; }
+.pv-swing { opacity:0.16; }
+.pv-swing-edge { fill:none; stroke-width:1; opacity:0.45; stroke-linejoin:round; }
+.pv-srcs b { color:var(--tx-1); font-weight:600; margin-left:3px; }
+.pv-srcs { margin-left:auto; display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px;
+           font-size:0.7rem; color:var(--tx-2); justify-content:flex-end; }
+.pv-src { display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
+.pv-src i, .pv-swatch { display:inline-block; width:9px; height:9px; border-radius:2px; flex:none; }
+.pv-src-group { color:var(--tx-3); font-weight:600; text-transform:uppercase; letter-spacing:0.4px; font-size:0.64rem; }
+.pv-src-group.pv-foreign { margin-left:6px; }
+.pv-procs { margin:14px 0 4px; padding:12px 14px; border:1px solid var(--border); border-radius:10px;
+            background:var(--bg-1); }
+.pv-procs-head { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
+.pv-gpu { margin-left:auto; font-size:0.72rem; color:var(--tx-3); }
+.pv-card { display:flex; height:12px; border-radius:6px; overflow:hidden; background:var(--bg-3);
+           margin-bottom:8px; }
+.pv-card i { display:block; height:100%; opacity:0.85; }
+.pv-proc-table { margin-top:0; }
+.pv-proc-table td { vertical-align:top; }
+.pv-proc-table td:first-child { color:var(--tx-1); }
+.pv-proc-table .pv-swatch { margin-right:7px; vertical-align:-1px; }
+.pv-num { text-align:right !important; white-space:nowrap; }
+.pv-proc-models { color:var(--tx-3); font-size:0.72rem; margin:2px 0 0 16px; }
+.pv-badge { display:inline-block; margin-left:6px; padding:0 6px; border-radius:6px; font-size:0.66rem;
+            line-height:1.5; border:1px solid var(--border); color:var(--tx-2); vertical-align:1px; }
+.pv-badge.foreign { border-color:color-mix(in srgb, var(--orange) 60%, transparent); color:var(--tx-1); }
+.pv-proc-sub { display:none; color:var(--tx-3); font-size:0.72rem; margin:2px 0 0 16px; }
+.pv-tip-sub { padding-left:14px; font-size:0.72rem; line-height:1.45; }
+/* A phone: the details move under the name, the table fits the width */
+@media (max-width: 640px) {
+    .pv-proc-table .pv-proc-details { display:none; }
+    .pv-proc-sub { display:block; }
+    .pv-proc-table th, .pv-proc-table td { padding:4px 5px; }
+    .pv-chart-head { flex-wrap:wrap; }
+    .pv-srcs { margin-left:0; justify-content:flex-start; flex-basis:100%; }
+}
+.pv-tip-sub b { min-width:46px; }
+
+.pv-table-wrap { margin-top:10px; font-size:0.78rem; }
+.pv-table-wrap summary { cursor:pointer; color:var(--tx-2); padding:4px 0; }
+.pv-table { width:100%; border-collapse:collapse; margin-top:6px; font-variant-numeric:tabular-nums; }
+.pv-table th, .pv-table td { text-align:left; padding:4px 8px; border-bottom:1px solid var(--border); color:var(--tx-2); }
+.pv-table th { color:var(--tx-3); font-weight:600; font-size:0.7rem; text-transform:uppercase; }
+
+@media (max-width: 720px) {
+    .pv-body { padding:12px; }
+    .pv-legend { margin-left:0; }
+}

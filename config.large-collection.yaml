@@ -1,0 +1,58 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  Whisper Transcription Manager — settings for a large library    ║
+# ║                                                                  ║
+# ║  For 50,000+ recordings on a NAS and an NVIDIA card with         ║
+# ║  12 GB or more. This file is not read by the app: copy the       ║
+# ║  parts you want into the config.yaml it loads (docs/GUIDE.md:    ║
+# ║  Configuration — usually ./config.yaml in the app folder).       ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+server:
+  # This machine only; "0.0.0.0" for the network (with auth.enabled)
+  host: "127.0.0.1"
+  port: 9860
+
+directories:
+  media: ""  # ← Your media directory (NAS/local)
+  # Work on SSD/NVMe for fast temp files!
+  work: ""
+  # A JSON copy next to each recording: the transcripts outlive the
+  # database. "database" keeps them in SQLite only — then the backups below
+  # are their only copy.
+  transcript_mode: "alongside"
+
+database:
+  fts_enabled: true
+  # At 50k+ the start-up sync of the JSON copies takes long → manual
+  # (Settings → Database & backups → Maintenance → Import transcripts)
+  sync_on_start: false
+  auto_backup: true
+  max_backups: 7
+  # Another disk or the NAS — a copy on the database's own disk dies with it
+  backup_path: ""
+
+hardware:
+  device: "auto"
+  compute_type: "float16"
+  # 12 GB of VRAM: generous separation chunks
+  sep_chunk_duration_sec: 1800
+
+transcription:
+  default_model: "turbo"
+  default_language: "auto"
+  default_diarize: true
+  # Or the HF_TOKEN environment variable; ./start.sh --hf-token checks and
+  # sets it (docs/GUIDE.md: Speaker diarization: the Hugging Face token)
+  hf_token: ""
+  filter_hallucinations: true
+
+# New recordings: continuous scanning looks at changed folders only and
+# queues what it finds — the file watcher (scanner.watch_enabled) walks the
+# whole tree every round and only shows a notice
+autoscan:
+  enabled: true
+  transcribe: true
+
+logging:
+  level: "INFO"
+  persist: true

@@ -1,0 +1,759 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   Voices — the map, the guided assignment, people, history, extractor.
+
+   One workspace with five tabs, in the visual system of the settings: a
+   head bar, cards on the dark surface, figures in one hue, state colours
+   only for states. NOTHING FLOATS OVER THE MAP (fixed floating panels
+   would cover the picture): the
+   details of a voice are docked at the side and can be resized, the
+   guided assignment has a page of its own, and what a view leaves out is
+   said in a row of chips above the picture, not in boxes on top of it.
+
+   It builds on the plain overlay classes (.map-overlay, .map-panel,
+   .map-head, .map-stage, .map-btn in app.css); everything here is scoped
+   to the voices panel.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Shell ─────────────────────────────────────────────────────────────── */
+
+.map-panel.vx-panel {
+    width:calc(100vw - 20px); height:calc(100vh - 20px);
+    border-radius:14px; box-shadow:0 24px 80px rgba(0,0,0,0.6);
+}
+.vx-panel [hidden] { display:none !important; }
+.vx-head {
+    display:flex; align-items:center; gap:18px; padding:10px 14px 10px 20px;
+    border-bottom:1px solid var(--border); background:var(--bg-1); flex-shrink:0;
+}
+.vx-title {
+    display:inline-flex; align-items:center; gap:9px;
+    font-weight:700; font-size:1.02rem; color:var(--tx-1); white-space:nowrap;
+}
+.vx-title .ui-ico { width:19px; height:19px; color:var(--accent); }
+.vx-tabs { display:flex; gap:4px; }
+.vx-tab {
+    display:inline-flex; align-items:center; gap:8px;
+    padding:8px 14px; border:1px solid transparent; border-radius:9px;
+    background:none; color:var(--tx-2); font-family:inherit; font-size:0.88rem;
+    cursor:pointer; white-space:nowrap;
+}
+.vx-tab .ui-ico { width:16px; height:16px; }
+.vx-tab:hover { background:var(--bg-3); color:var(--tx-1); }
+.vx-tab.active { background:var(--accent-g); color:var(--tx-1); font-weight:600; }
+.vx-tab.active .ui-ico { color:var(--accent); }
+.vx-tab .vx-count { margin-left:2px; }
+.vx-head .map-state {
+    flex:1; min-width:0; font-size:0.78rem; color:var(--tx-3);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.vx-icon {
+    width:34px; height:34px; flex-shrink:0; border-radius:9px; cursor:pointer;
+    background:transparent; border:1px solid var(--border); color:var(--tx-2); font-size:0.9rem;
+}
+.vx-icon:hover { color:var(--tx-1); border-color:var(--border-h); background:var(--bg-3); }
+
+.vx-page { flex:1; min-height:0; display:flex; flex-direction:column; }
+.vx-count {
+    display:inline-block; min-width:18px; padding:0 6px; border-radius:9px;
+    background:var(--bg-4); color:var(--tx-2);
+    font-size:0.7rem; font-weight:600; line-height:17px; text-align:center;
+}
+.vx-count:empty { display:none; }
+
+/* ── Toolbars ──────────────────────────────────────────────────────────── */
+
+.vx-toolbar {
+    display:flex; align-items:center; gap:10px 14px; flex-wrap:wrap;
+    padding:8px 14px; border-bottom:1px solid var(--border); background:var(--bg-2);
+    font-size:0.78rem; color:var(--tx-2); flex-shrink:0;
+}
+.vx-toolbar.map-filter { background:var(--bg-1); }
+.vx-field { display:inline-flex; align-items:center; gap:7px; white-space:nowrap; }
+.vx-check input { margin:0; accent-color:var(--accent); cursor:pointer; }
+.vx-sep { width:1px; align-self:stretch; background:var(--border); }
+.vx-gap { flex:1; }
+.vx-toolbar input[type=range] { width:170px; accent-color:var(--accent); }
+.vx-toolbar input[type=number] { width:64px; }
+.vx-panel input[type=text], .vx-panel input[type=number], .vx-panel input[type=date],
+.vx-panel input[type=search], .vx-panel select {
+    padding:5px 8px; background:var(--bg-0); border:1px solid var(--border);
+    border-radius:7px; color:var(--tx-1); font-family:inherit; font-size:0.8rem;
+    outline:none;
+}
+.vx-panel input:focus, .vx-panel select:focus { border-color:var(--accent); }
+.vx-search { position:relative; display:inline-flex; align-items:center; }
+.vx-search .ui-ico {
+    position:absolute; left:9px; width:14px; height:14px; color:var(--tx-3); pointer-events:none;
+}
+.vx-search input { padding-left:28px !important; width:220px; }
+.vx-btn {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:5px 12px; border-radius:7px; border:1px solid var(--border);
+    background:var(--bg-3); color:var(--tx-2); font-family:inherit; font-size:0.8rem;
+    cursor:pointer; white-space:nowrap;
+}
+.vx-btn:hover { border-color:var(--accent); color:var(--tx-1); }
+.vx-btn:disabled { opacity:0.4; cursor:not-allowed; }
+.vx-btn .ui-ico { width:14px; height:14px; }
+.vx-btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+.vx-btn.primary:hover { filter:brightness(1.12); }
+.vx-btn.danger { color:var(--red); }
+.vx-btn.danger:hover { background:var(--red); border-color:var(--red); color:#fff; }
+.vx-btn.big { padding:9px 18px; font-size:0.9rem; border-radius:9px; }
+
+/* Segmented control: one choice of a few (Library/Trash, Tiles/Graph) */
+.vx-seg {
+    display:inline-flex; padding:2px; gap:2px; border-radius:9px;
+    background:var(--bg-0); border:1px solid var(--border);
+}
+.vx-seg-btn {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:4px 11px; border:none; border-radius:7px; background:none;
+    color:var(--tx-2); font-family:inherit; font-size:0.8rem; cursor:pointer; white-space:nowrap;
+}
+.vx-seg-btn:hover { color:var(--tx-1); }
+.vx-seg-btn.active { background:var(--bg-4); color:var(--tx-1); font-weight:600; }
+.vx-seg-btn.active .vx-count { background:var(--accent-g); color:var(--accent); }
+.vx-seg-btn:disabled { opacity:0.4; cursor:not-allowed; }
+/* The view switch keeps its old class (tests, voicemap_tiles.js) */
+.map-view-btn.active { background:var(--bg-4); color:var(--tx-1); }
+
+/* The two threshold arrows, stacked */
+.map-step { display:inline-flex; flex-direction:column; gap:1px; }
+.map-step .map-mini { padding:0 6px; line-height:1.2; font-size:0.55rem; }
+#mapThresholdValue, #mapDragValue, #mapDensityValue {
+    font-variant-numeric:tabular-nums; font-weight:600; color:var(--tx-1); min-width:2.6em;
+}
+
+/* A menu under a toolbar button (the graph's layout knobs) */
+.vx-pop-wrap { position:relative; }
+.vx-pop {
+    position:absolute; top:calc(100% + 6px); left:0; z-index:30;
+    display:grid; grid-template-columns:1fr; gap:10px; padding:14px 16px;
+    min-width:280px; background:var(--bg-1); border:1px solid var(--border-h);
+    border-radius:12px; box-shadow:0 14px 40px rgba(0,0,0,0.55);
+}
+.vx-pop .vx-field { justify-content:space-between; }
+.vx-pop input[type=range] { width:130px; }
+
+/* ── Chips: what the picture leaves out or points at ──────────────────── */
+
+.vx-chips { display:flex; flex-wrap:wrap; gap:6px 8px; padding:0 14px; flex-shrink:0; }
+.vx-chips > * { margin:7px 0 0; }
+.vx-chips > *:last-child { margin-bottom:7px; }
+.vx-chip, .map-highlight-chip {
+    display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap;
+    padding:4px 6px 4px 12px; border-radius:14px; font-size:0.78rem;
+    background:var(--bg-3); border:1px solid var(--border); color:var(--tx-2);
+}
+.map-highlight-chip {
+    background:rgba(255, 210, 74, 0.10); border-color:#ffd24a; color:var(--tx-1);
+    white-space:normal;
+}
+.map-highlight-chip b { color:#ffd24a; }
+.map-highlight-x { cursor:pointer; margin-left:4px; color:var(--tx-3); padding:0 6px; }
+.map-highlight-x:hover { color:var(--red); }
+.vx-chip .map-mini, .map-highlight-chip .map-mini { font-size:0.72rem; padding:2px 9px; border-radius:10px; }
+.vx-chip.warn { border-color:var(--orange); color:var(--tx-1); }
+
+/* Autosearch across all thresholds — the curve is the finding */
+.map-search-bar {
+    padding:6px 14px; background:var(--bg-2); border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:0.78rem;
+}
+.map-search-curve {
+    display:inline-flex; align-items:flex-end; gap:1px; height:22px;
+    padding:0 4px; border-left:1px solid var(--border); border-right:1px solid var(--border);
+}
+.map-search-curve .map-search-bar {
+    display:inline-block; width:5px; padding:0; border:none;
+    background:var(--tx-3); border-radius:1px 1px 0 0; cursor:pointer;
+}
+.map-search-curve .map-search-bar:hover { background:var(--tx-1); }
+.map-search-curve .map-search-max { background:var(--accent); }
+.map-search-curve .map-search-best { background:#5ec27a; }
+
+/* ── The map and its docked details ───────────────────────────────────── */
+
+.vx-mapbody { flex:1; min-height:0; display:flex; }
+.vx-page-map .map-stage { position:relative; flex:1; min-width:0; min-height:0; }
+.vx-page-map .map-stage canvas { width:100%; height:100%; display:block; cursor:grab; }
+.vx-splitter {
+    width:7px; flex-shrink:0; cursor:col-resize; background:var(--bg-1);
+    border-left:1px solid var(--border); border-right:1px solid var(--border);
+}
+.vx-splitter:hover, .vx-splitter.dragging { background:var(--accent-g); }
+.vx-side {
+    width:var(--vx-side, 460px); min-width:300px; max-width:60vw; flex-shrink:0;
+    display:flex; flex-direction:column; min-height:0; overflow:hidden;
+    background:var(--bg-1);
+}
+.vx-mapbody.side-closed .vx-side, .vx-mapbody.side-closed .vx-splitter { display:none; }
+
+/* The hover label follows the pointer; it never catches a click */
+.map-hint {
+    position:absolute; left:0; top:0; z-index:5; display:none; pointer-events:none;
+    max-width:380px; padding:8px 11px; border-radius:9px;
+    background:rgba(13, 13, 20, 0.94); border:1px solid var(--border-h);
+    font-size:0.78rem; line-height:1.5; color:var(--tx-1);
+    box-shadow:0 8px 24px rgba(0,0,0,0.45);
+}
+.map-small { font-size:0.72rem; color:var(--tx-3); }
+.map-unnamed { color:var(--tx-3); font-weight:400; font-style:italic; }
+.map-foot {
+    padding:6px 14px; border-top:1px solid var(--border);
+    font-size:0.72rem; color:var(--tx-3); background:var(--bg-2); flex-shrink:0;
+}
+
+/* The chosen voice. A column: head, transport and name stay, ONLY the
+   lists below scroll (the playback buttons never leave the screen). */
+.map-selection {
+    display:none; flex:1; min-height:0; flex-direction:column; overflow:hidden;
+    padding:12px 14px 0; font-size:0.82rem; line-height:1.5;
+}
+.map-selection > * { flex:0 0 auto; }
+.map-p-head { display:flex; align-items:flex-start; gap:8px; }
+.map-p-names { flex:1; min-width:0; }
+.map-p-title { font-weight:700; font-size:0.92rem; color:var(--tx-1); word-break:break-all; }
+.map-p-folder {
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    direction:rtl; text-align:left;
+}
+.map-p-closed {
+    background:none; border:1px solid var(--border); border-radius:7px; color:var(--tx-2);
+    cursor:pointer; font-family:inherit; font-size:0.74rem; padding:3px 9px; white-space:nowrap;
+}
+.map-p-closed:hover { color:var(--tx-1); border-color:var(--accent); }
+.map-p-spot { margin:6px 0 2px; }
+.map-p-transport {
+    margin:10px 0 6px; padding:8px 9px; border-radius:10px;
+    background:var(--bg-2); border:1px solid var(--border);
+}
+.map-audio { display:block; width:100%; height:36px; }
+.map-audio-slot { margin:2px 0 6px; }
+.map-p-keys { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+.map-p-keys .map-mini:disabled { opacity:0.35; cursor:default; background:var(--bg-2); color:var(--tx-3); }
+.map-p-queue-label { opacity:0.7; margin-right:2px; }
+.map-p-state { font-size:0.72rem; color:var(--accent); font-variant-numeric:tabular-nums; margin-left:2px; }
+.map-p-state-off { color:var(--tx-3); }
+.map-p-preview-field { margin-left:auto; }
+.map-p-auto { display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }
+.map-p-auto input { margin:0; cursor:pointer; accent-color:var(--accent); }
+.map-preview {
+    background:var(--bg-3); border:1px solid var(--border); border-radius:6px;
+    color:var(--tx-1); font-family:inherit; font-size:0.72rem; padding:1px 4px;
+}
+.map-p-bar { height:3px; margin-top:6px; border-radius:2px; background:var(--bg-0); overflow:hidden; }
+.map-p-bar-fill { height:100%; width:0; background:var(--accent); border-radius:2px; }
+.map-p-bar-queue .map-p-bar-fill { background:var(--tx-3); }
+.map-p-running { margin-top:3px; word-break:break-all; }
+.map-rename, .map-group-rename { display:flex; gap:6px; margin-top:8px; }
+.map-rename input, .map-group-rename input {
+    flex:1; min-width:0; padding:6px 9px; background:var(--bg-0); border:1px solid var(--border);
+    border-radius:7px; color:var(--tx-1); font-family:inherit; font-size:0.85rem; outline:none;
+}
+.map-rename input:focus, .map-group-rename input:focus { border-color:var(--accent); }
+.map-rename button, .map-group-rename button {
+    border:1px solid var(--border); border-radius:7px; font-family:inherit;
+    font-size:0.78rem; padding:4px 11px; cursor:pointer; white-space:nowrap;
+    background:var(--bg-3); color:var(--tx-1);
+}
+.map-rename button:first-of-type { background:var(--accent); border-color:var(--accent); color:#fff; }
+.map-rename button:hover, .map-group-rename button:hover { border-color:var(--accent); }
+.map-p-body { flex:1 1 auto; min-height:0; overflow-y:auto; margin:6px -14px 0; padding:0 14px 14px; }
+.map-p-starter { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:6px; }
+.map-section {
+    font-weight:600; margin:12px 0 5px; padding-top:10px; color:var(--tx-1);
+    border-top:1px solid var(--border); display:flex; align-items:center;
+    gap:8px; justify-content:space-between;
+}
+.map-neighbour {
+    display:flex; align-items:center; gap:7px; padding:3px 4px;
+    border-radius:6px; cursor:pointer;
+}
+.map-neighbour:hover { background:var(--bg-3); }
+.map-neighbour-text {
+    flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis;
+    white-space:nowrap; direction:rtl; text-align:left;
+}
+.map-mini {
+    background:var(--bg-3); border:1px solid var(--border); border-radius:6px;
+    color:var(--tx-2); font-family:inherit; font-size:0.72rem;
+    padding:2px 8px; cursor:pointer; flex:0 0 auto;
+}
+.map-mini:hover { background:var(--accent); border-color:var(--accent); color:#fff; }
+.map-mini-emphasis { border-color:var(--accent); color:var(--accent); }
+.map-mini.map-mini-on { border-color:var(--accent); background:var(--accent); color:#fff; }
+.map-mini.map-mini-danger { color:var(--red); }
+.map-mini.map-mini-danger:hover { background:var(--red); color:#fff; border-color:var(--red); }
+
+/* With nothing chosen: the largest groups (the legend) */
+.map-legend {
+    display:none; flex:1; min-height:0; overflow-y:auto; padding:12px 14px 14px;
+    font-size:0.8rem; line-height:1.5;
+}
+.map-legend-head { font-weight:700; color:var(--tx-1); margin-bottom:8px; font-size:0.86rem; }
+.map-legend-sort { display:flex; gap:4px; margin:0 0 8px; flex-wrap:wrap; }
+.map-legend-sort button {
+    padding:3px 9px; border-radius:7px; border:1px solid var(--border); background:var(--bg-2);
+    color:var(--tx-2); font:inherit; font-size:0.75rem; cursor:pointer;
+}
+.map-legend-sort button:hover { border-color:var(--accent); }
+.map-legend-sort button.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+.map-legend-row {
+    display:flex; align-items:center; gap:8px; cursor:pointer;
+    padding:4px 6px; border-radius:7px;
+}
+.map-legend-row:hover { background:var(--bg-3); }
+.map-legend-row .map-legend-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--tx-1); }
+.map-legend-row .map-legend-n { color:var(--tx-3); font-variant-numeric:tabular-nums; }
+.map-legend-check { margin:0; cursor:pointer; flex:0 0 auto; accent-color:var(--accent); }
+.map-point { width:10px; height:10px; border-radius:50%; flex:0 0 auto; }
+.map-legend-help { margin-top:12px; padding-top:10px; border-top:1px solid var(--border); }
+
+/* ── Cards (assign, people, history, extract) ─────────────────────────── */
+
+.vx-scroll { flex:1; min-height:0; overflow-y:auto; }
+.vx-card {
+    background:var(--bg-2); border:1px solid var(--border); border-radius:14px;
+    padding:16px 18px; min-width:0;
+}
+.vx-card + .vx-card { margin-top:14px; }
+.vx-card h3 { margin:0 0 4px; font-size:0.98rem; font-weight:700; color:var(--tx-1); }
+.vx-card .vx-sub { font-size:0.82rem; color:var(--tx-2); line-height:1.5; }
+.vx-muted { color:var(--tx-3); }
+.vx-num { font-variant-numeric:tabular-nums; }
+.vx-empty { padding:30px; text-align:center; color:var(--tx-3); font-size:0.88rem; }
+.vx-note { font-size:0.8rem; color:var(--tx-2); line-height:1.55; }
+.vx-note.warn { color:var(--orange); }
+.vx-note.err { color:var(--red); }
+.vx-bar { height:8px; background:var(--bg-4); border-radius:4px; overflow:hidden; }
+.vx-bar > div { height:100%; background:var(--accent); transition:width 0.3s; }
+kbd {
+    display:inline-block; padding:0 5px; border:1px solid var(--border-h);
+    border-bottom-width:2px; border-radius:4px; background:var(--bg-3);
+    font-family:var(--font-mono); font-size:0.72rem; color:var(--tx-2);
+}
+
+/* Players of samples in a grid — one per speaker of a question */
+.vx-samples {
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));
+    gap:10px 14px; margin:12px 0;
+}
+.vx-sample {
+    display:flex; flex-direction:column; gap:3px; min-width:0;
+    padding:8px 10px; background:var(--bg-1); border:1px solid var(--border); border-radius:10px;
+}
+.vx-sample audio { width:100%; height:34px; }
+.vx-sample-head { display:flex; align-items:baseline; gap:8px; font-size:0.74rem; color:var(--tx-2); min-width:0; }
+.vx-sample-head b { color:var(--tx-1); font-weight:600; flex-shrink:0; }
+/* The file name alone is cut at its START (the end names the recording);
+   the speech sits apart, so the cut can't move it. */
+.vx-sample-file { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; direction:rtl; text-align:left; }
+.vx-sample-sec { flex-shrink:0; color:var(--tx-3); font-variant-numeric:tabular-nums; }
+
+/* ── Assign ────────────────────────────────────────────────────────────── */
+
+.vx-assign {
+    flex:1; min-height:0; display:grid; grid-template-columns:minmax(0, 1fr) 380px;
+}
+.vx-assign-main { min-height:0; overflow-y:auto; padding:18px 22px; }
+.vx-assign-side {
+    min-height:0; overflow-y:auto; padding:18px 18px; border-left:1px solid var(--border);
+    background:var(--bg-1);
+}
+.vx-q-head { display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
+.vx-q-title { font-size:1.25rem; font-weight:700; color:var(--tx-1); }
+.vx-q-meta { font-size:0.86rem; color:var(--tx-2); }
+.vx-again {
+    display:flex; align-items:center; gap:10px; margin-bottom:12px;
+    padding:9px 12px; border-radius:10px; font-size:0.84rem;
+    background:rgba(245, 158, 11, 0.10); border:1px solid var(--orange); color:var(--tx-1);
+}
+.vx-decide {
+    position:sticky; bottom:-18px; margin:4px -22px -18px; padding:14px 22px 16px;
+    background:linear-gradient(to bottom, rgba(13,13,20,0), var(--bg-1) 30%);
+}
+.vx-decide-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.vx-decide-row input[type=text] { flex:1; min-width:220px; font-size:0.95rem !important; padding:9px 12px !important; border-radius:9px !important; }
+.vx-keys { margin-top:7px; font-size:0.74rem; color:var(--tx-3); }
+.vx-keys kbd { margin:0 2px; }
+.assign-bar { height:8px; background:var(--bg-4); border-radius:4px; overflow:hidden; margin:8px 0 6px; }
+.assign-bar > div { height:100%; background:var(--accent); transition:width .3s; }
+.assign-then { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:10px 0 0; }
+.vx-side-title { font-size:0.74rem; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; color:var(--tx-2); margin:18px 0 8px; }
+.vx-side-title:first-child { margin-top:0; }
+.vx-recent { display:flex; flex-direction:column; gap:4px; }
+.vx-recent-row {
+    display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:8px;
+    background:var(--bg-2); border:1px solid var(--border); font-size:0.8rem; min-width:0;
+}
+.vx-recent-row.undone { opacity:0.55; }
+.vx-recent-row .vx-what { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--tx-1); }
+.vx-recent-row .vx-when { color:var(--tx-3); font-size:0.72rem; font-variant-numeric:tabular-nums; }
+.vx-kind { flex-shrink:0; width:18px; text-align:center; }
+.vx-kind.name { color:var(--green); }
+.vx-kind.trash { color:var(--red); }
+.vx-kind.restore, .vx-kind.unname, .vx-kind.rename { color:var(--accent); }
+
+/* ── History ───────────────────────────────────────────────────────────── */
+
+.vx-list { padding:14px 22px 22px; }
+.vx-day { font-size:0.74rem; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; color:var(--tx-2); margin:18px 0 8px; }
+.vx-day:first-child { margin-top:0; }
+.vx-entry {
+    background:var(--bg-2); border:1px solid var(--border); border-radius:12px;
+    margin-bottom:8px; overflow:hidden;
+}
+.vx-entry.undone { opacity:0.72; }
+.vx-entry.undone .vx-entry-title { text-decoration:line-through; text-decoration-color:var(--tx-3); }
+.vx-entry-row { display:flex; align-items:center; gap:12px; padding:10px 14px; cursor:pointer; }
+.vx-entry-row:hover { background:var(--bg-3); }
+.vx-entry-main { flex:1; min-width:0; }
+.vx-entry-title { font-weight:600; color:var(--tx-1); font-size:0.9rem; }
+.vx-entry-meta { font-size:0.78rem; color:var(--tx-2); margin-top:1px; }
+.vx-entry-when { font-size:0.78rem; color:var(--tx-3); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.vx-tag {
+    display:inline-block; padding:0 7px; border-radius:8px; margin-left:6px;
+    font-size:0.68rem; font-weight:600; vertical-align:1px;
+    background:var(--bg-4); color:var(--tx-2);
+}
+.vx-tag.undone { background:rgba(245, 158, 11, 0.16); color:var(--orange); }
+.vx-entry-detail { padding:4px 14px 14px; border-top:1px solid var(--border); background:var(--bg-1); }
+.vx-entry-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px; }
+
+/* ── People ────────────────────────────────────────────────────────────── */
+
+/* Every row is its own grid, so every column has a FIXED share — an "auto"
+   column would size itself per row and the columns would not line up. The
+   buttons take up to 470 px and wrap onto a second line in less: a fixed
+   470 px pushed the last ones out of the card in a window of 1,000–1,150 px. */
+.vx-people-row {
+    display:grid;
+    grid-template-columns:minmax(180px, 1.6fr) repeat(3, minmax(90px, 0.8fr)) minmax(110px, 0.8fr) minmax(140px, 470px);
+    gap:14px; align-items:center; padding:9px 16px; font-size:0.84rem;
+}
+/* The spans column only exists where some voices lack them */
+.vx-people-legacy .vx-people-row {
+    grid-template-columns:minmax(180px, 1.6fr) repeat(4, minmax(90px, 0.8fr)) minmax(110px, 0.8fr) minmax(140px, 470px);
+}
+.vx-people-row > .vx-num { text-align:right; }
+.vx-people-head { color:var(--tx-3); font-size:0.72rem; font-weight:700; letter-spacing:0.6px; text-transform:uppercase; }
+.vx-people-name { display:flex; align-items:center; gap:9px; min-width:0; font-weight:600; color:var(--tx-1); }
+.vx-people-name span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.vx-people-actions { display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap; }
+.vx-page-inner { flex:1; min-height:0; display:flex; flex-direction:column; }
+.vx-page-inner[hidden] { display:none; }
+
+/* ── Listening through one person (voices_review.js) ───────────────────── */
+
+.vx-review { flex:1; min-height:0; display:grid; grid-template-columns:330px minmax(0, 1fr); }
+.vx-review .vx-x-form { grid-column:1; }
+.vx-review-main { min-height:0; display:flex; flex-direction:column; }
+.vx-review-head { padding:12px 16px 10px; border-bottom:1px solid var(--border); background:var(--bg-1); }
+.vx-review-title { font-size:0.95rem; color:var(--tx-1); margin-bottom:8px; }
+.vx-review-player { display:flex; flex-direction:column; gap:6px; }
+.vx-review-player audio { width:100%; height:36px; }
+.vx-review-keys { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.vx-review-keys .map-mini { font-size:0.8rem; padding:2px 9px; }
+.vx-review-keys select { margin-left:4px; }
+.vx-review-keys input { accent-color:var(--accent); vertical-align:-2px; }
+.vx-review-pos { margin-left:auto; font-variant-numeric:tabular-nums; }
+.vx-review-now { display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:space-between;
+    font-size:0.8rem; color:var(--tx-2); min-height:30px; }
+.vx-review-now > span:first-child { min-width:0; overflow-wrap:anywhere; }
+.vx-review-now-acts { display:flex; gap:6px; flex-wrap:wrap; }
+.vx-review-now kbd, .vx-review-keyhelp kbd { margin-left:4px; }
+.vx-review-bulk { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px; padding:7px 10px;
+    border-radius:8px; background:var(--accent-g); font-size:0.82rem; color:var(--tx-1); }
+.vx-review-last { display:flex; align-items:center; gap:8px; margin-top:6px; }
+.vx-review-last[hidden] { display:none; }
+.vx-review-last .vx-btn { padding:2px 10px; }
+.vx-review-list { flex:1; min-height:0; overflow-y:auto; padding:6px 10px; }
+.vx-review-keyhelp { padding:6px 16px; border-top:1px solid var(--border); background:var(--bg-1); }
+.vx-rv-row {
+    display:grid; align-items:center; gap:10px; padding:6px 8px; border-radius:7px; font-size:0.8rem;
+    grid-template-columns:18px 30px 104px minmax(120px, 1fr) 84px 44px 62px 118px 150px 46px 128px;
+}
+.vx-rv-row:hover { background:var(--bg-3); }
+.vx-rv-row.now { background:var(--accent-g); box-shadow:inset 3px 0 0 var(--accent); }
+.vx-rv-row.done { opacity:0.55; }
+.vx-rv-row.done .vx-rv-file { text-decoration:line-through; }
+.vx-rv-pick { accent-color:var(--accent); margin:0; }
+.vx-rv-label { font-weight:600; color:var(--tx-1); font-variant-numeric:tabular-nums; }
+.vx-rv-file { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--tx-1); }
+.vx-rv-date, .vx-rv-speech { font-variant-numeric:tabular-nums; }
+.vx-rv-row .vx-tag { margin-left:0; justify-self:start; }
+.vx-tag.spread { background:var(--bg-2); color:var(--tx-3); }
+.vx-fit { display:flex; align-items:center; gap:6px; font-variant-numeric:tabular-nums; color:var(--tx-2); }
+.vx-fit-bar { width:56px; height:6px; border-radius:3px; background:var(--bg-4); overflow:hidden; }
+.vx-fit-bar > span { display:block; height:100%; background:var(--tx-3); }
+.vx-fit.hi .vx-fit-bar > span { background:var(--green); }
+.vx-fit.lo { color:var(--orange); }
+.vx-fit.lo .vx-fit-bar > span { background:var(--orange); }
+.vx-rv-other { color:var(--orange); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.vx-rv-old { font-size:0.68rem; padding:0 6px; border-radius:8px; background:var(--bg-2); color:var(--tx-3); justify-self:start; }
+.vx-rv-row .vx-tag.undone { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%; }
+.vx-rv-acts { display:flex; gap:4px; }
+.vx-rv-namepop { display:flex; gap:6px; align-items:center; grid-column:1 / -1; padding:6px 0 2px; }
+.vx-rv-namepop input { flex:1; min-width:0; max-width:320px; padding:5px 8px; background:var(--bg-0);
+    border:1px solid var(--accent); border-radius:7px; color:var(--tx-1); font-family:inherit; }
+
+/* ── Extract ───────────────────────────────────────────────────────────── */
+
+/* Wide: filters | preview | output. The filters and the output sit in one
+   wrapper that dissolves into the grid (display:contents) — narrower, it
+   becomes ONE scrolling column left of the preview instead of squeezing
+   the output under both. */
+.vx-extract {
+    flex:1; min-height:0; display:grid;
+    grid-template-columns:360px minmax(0, 1fr) 360px; grid-template-rows:minmax(0, 1fr);
+}
+.vx-x-left { display:contents; }
+.vx-x-form, .vx-x-preview, .vx-x-out { min-height:0; overflow-y:auto; padding:16px 18px; }
+.vx-x-form { grid-column:1; grid-row:1; border-right:1px solid var(--border); background:var(--bg-1); }
+.vx-x-preview { grid-column:2; grid-row:1; }
+.vx-x-out { grid-column:3; grid-row:1; border-left:1px solid var(--border); background:var(--bg-1); }
+.vx-form-section { margin-bottom:16px; }
+.vx-form-title { font-size:0.74rem; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; color:var(--tx-2); margin-bottom:8px; }
+.vx-row { display:flex; align-items:center; gap:8px; margin:7px 0; font-size:0.82rem; color:var(--tx-2); }
+.vx-row > label:first-child { flex:0 0 118px; }
+.vx-row input[type=text], .vx-row input[type=date], .vx-row select { flex:1; min-width:0; }
+.vx-row input[type=number] { width:78px; }
+.vx-row.check { gap:8px; }
+.vx-row.check input { accent-color:var(--accent); margin:0; }
+.vx-radio { display:flex; flex-direction:column; gap:5px; }
+.vx-radio label { display:flex; gap:8px; align-items:flex-start; font-size:0.82rem; color:var(--tx-2); cursor:pointer; }
+.vx-radio input { accent-color:var(--accent); margin-top:3px; }
+.vx-radio b { color:var(--tx-1); font-weight:600; }
+.vx-stats { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px; }
+.vx-stat { background:var(--bg-2); border:1px solid var(--border); border-radius:12px; padding:10px 12px; }
+.vx-stat-v { font-size:1.3rem; font-weight:700; color:var(--tx-1); font-variant-numeric:tabular-nums; }
+.vx-stat-l { font-size:0.74rem; color:var(--tx-3); }
+.vx-years { display:flex; align-items:flex-end; gap:6px; height:84px; margin-top:8px; }
+.vx-year { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; min-width:0; }
+.vx-year > div { width:100%; max-width:34px; background:var(--accent); border-radius:3px 3px 0 0; min-height:2px; }
+.vx-year span { font-size:0.66rem; color:var(--tx-3); }
+.vx-drop { display:flex; justify-content:space-between; gap:10px; font-size:0.8rem; padding:3px 0; border-bottom:1px dashed var(--border); color:var(--tx-2); }
+.vx-drop b { color:var(--tx-1); font-variant-numeric:tabular-nums; }
+.vx-clip {
+    display:flex; align-items:flex-start; gap:10px; padding:8px 4px;
+    border-bottom:1px solid var(--border); font-size:0.82rem;
+}
+.vx-clip-play { flex-shrink:0; }
+.vx-clip-main { flex:1; min-width:0; }
+.vx-clip-text { color:var(--tx-1); line-height:1.45; }
+.vx-clip-meta { font-size:0.72rem; color:var(--tx-3); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.vx-file { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--border); font-size:0.8rem; }
+
+/* The preview's small cards side by side; "left out" no wider than it reads */
+.vx-x-cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:14px; margin-top:14px; }
+.vx-x-cards .vx-card + .vx-card { margin-top:0; }
+.vx-x-preview .vx-clips-card, .vx-x-preview .vx-x-cards + .vx-card { margin-top:14px; }
+.vx-band { display:grid; grid-template-columns:86px 1fr 70px; gap:10px; align-items:center; font-size:0.8rem; padding:2px 0; color:var(--tx-2); }
+.vx-band b { text-align:right; color:var(--tx-1); font-variant-numeric:tabular-nums; }
+.vx-band-bar { height:8px; background:var(--bg-4); border-radius:4px; overflow:hidden; }
+.vx-band-bar i { display:block; height:100%; background:var(--accent); border-radius:4px; }
+/* Words by how sure the alignment is; the one being said lights up */
+.vx-w { border-radius:3px; padding:0 1px; transition:background 0.08s; }
+.vx-w.w-mid { color:var(--orange); }
+.vx-w.w-lo { color:var(--red); text-decoration:underline dotted; text-underline-offset:3px; }
+.vx-w.w-none { color:var(--tx-3); }
+.vx-w.on { background:var(--accent-g); box-shadow:inset 0 0 0 1px var(--accent); color:var(--tx-1); }
+.vx-words-note { margin:6px 0 2px; }
+.vx-edit-words { font-size:0.9rem; line-height:1.7; padding:4px 2px; }
+.vx-legacy-note { margin-top:12px; }
+.vx-legacy-note label { display:flex; gap:10px; align-items:flex-start; font-size:0.82rem; color:var(--tx-2); cursor:pointer; }
+.vx-legacy-note input { accent-color:var(--accent); margin-top:3px; }
+.vx-legacy-note b { color:var(--tx-1); }
+.vx-sure { color:var(--tx-2); font-weight:600; }
+.vx-sure.hi { color:var(--green); }
+.vx-sure.lo { color:var(--orange); }
+/* A preview whose filters changed: dimmed until the new one is there */
+.vx-stale-note { display:none; margin-bottom:10px; }
+.vx-x-preview.vx-stale .vx-stale-note {
+    display:block; padding:8px 12px; border-radius:9px; font-size:0.82rem;
+    background:rgba(245, 158, 11, 0.10); border:1px solid var(--orange); color:var(--tx-1);
+}
+.vx-x-preview.vx-stale .vx-stats, .vx-x-preview.vx-stale .vx-x-cards,
+.vx-x-preview.vx-stale .vx-card { opacity:0.45; }
+
+/* The clips, and the editor that opens under one */
+.vx-clip-bar { margin:10px -18px 4px; padding:6px 18px; background:none; border-bottom:none; }
+.vx-clip { align-items:center; }
+.vx-clip.dropped .vx-clip-text { text-decoration:line-through; color:var(--tx-3); }
+.vx-clip.editing { background:var(--bg-3); border-radius:8px; }
+.vx-clip-acts { display:flex; gap:4px; flex-shrink:0; }
+.vx-tag.kept { background:rgba(34,197,94,0.16); color:var(--green); }
+.vx-clip-edit {
+    margin:4px 0 12px; padding:12px 14px; border-radius:12px;
+    background:var(--bg-1); border:1px solid var(--accent);
+}
+.vx-wave { display:block; width:100%; height:130px; border-radius:8px; background:var(--bg-0); cursor:pointer; }
+.vx-edit-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:9px; font-size:0.8rem; }
+.vx-edit-bound { display:inline-flex; align-items:center; gap:5px; }
+.vx-edit-bound b { font-variant-numeric:tabular-nums; color:#ffd24a; min-width:62px; text-align:center; }
+.vx-edit-len { flex:1; text-align:center; color:var(--tx-2); font-variant-numeric:tabular-nums; }
+.vx-file-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--tx-1); }
+
+/* Where the export goes: a folder of your own, checked as it is typed */
+#xDestChoice { margin-top:10px; }
+.vx-dest { margin:4px 0 10px; }
+.vx-dest-field { display:flex; gap:6px; }
+.vx-dest-field input { flex:1; min-width:0; }
+.vx-dest-info { margin:5px 0 4px; overflow-wrap:anywhere; }
+.vx-dest-info.ok { color:var(--green); }
+.vx-dest-info.err { color:var(--red); }
+.vx-browser { margin-top:6px; border:1px solid var(--border); border-radius:8px; background:var(--bg-0); padding:6px; }
+.vx-browser-head { display:flex; align-items:center; gap:6px; margin-bottom:6px; }
+/* A long path is cut at its start, where it says least: right to left
+   for the cut, the path itself isolated left to right (<bdi>) — or the
+   leading slash would wander to the end */
+.vx-browser-path { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; direction:rtl; text-align:left; font-size:0.78rem; color:var(--tx-2); }
+/* A block, not a flex column: in a column of limited height the rows
+   would shrink into each other */
+.vx-browser-list { max-height:220px; overflow:auto; }
+.vx-browser-list button { display:block; width:100%; text-align:left; padding:4px 6px; border:0; border-radius:5px; background:none;
+    color:var(--tx-1); font-family:inherit; font-size:0.8rem; line-height:1.4; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.vx-browser-list button:hover { background:var(--bg-3); }
+.vx-saved { overflow-wrap:anywhere; }
+.vx-saved .vx-btn { margin-left:6px; padding:2px 8px; }
+
+/* The last decisions on the Assign page open to their samples */
+.vx-recent-item { display:flex; flex-direction:column; gap:4px; }
+.vx-recent-row { cursor:pointer; }
+.vx-recent-samples .vx-samples { grid-template-columns:1fr; margin:2px 0 6px; gap:6px; }
+
+/* ── Narrow windows ────────────────────────────────────────────────────── */
+
+@media (max-width: 1300px) {
+    .vx-extract { grid-template-columns:330px minmax(0, 1fr); }
+    .vx-x-left {
+        display:block; grid-column:1; grid-row:1; min-height:0; overflow-y:auto;
+        border-right:1px solid var(--border); background:var(--bg-1);
+    }
+    .vx-x-form, .vx-x-out { overflow:visible; border:none; background:none; }
+    .vx-x-out { border-top:1px solid var(--border); }
+    .vx-x-preview { grid-column:2; }
+    .vx-tab { padding:7px 10px; }
+}
+@media (max-width: 1500px) {
+    .vx-toolbar input[type=range] { width:110px; }
+    .vx-toolbar { gap:8px 10px; }
+}
+@media (max-width: 980px) {
+    .vx-assign { grid-template-columns:1fr; }
+    .vx-assign-side { border-left:none; border-top:1px solid var(--border); }
+    .vx-extract { grid-template-columns:1fr; grid-template-rows:auto auto; overflow-y:auto; }
+    .vx-x-left { grid-row:1; overflow:visible; border-right:none; border-bottom:1px solid var(--border); }
+    .vx-x-preview { grid-column:1; grid-row:2; overflow:visible; }
+    .vx-head { flex-wrap:wrap; gap:8px 12px; }
+    .vx-tab svg { display:none; }
+    .vx-side { width:min(var(--vx-side, 460px), 48vw); }
+    .vx-people-row, .vx-people-legacy .vx-people-row { grid-template-columns:minmax(120px, 1fr) minmax(140px, 470px); }
+    .vx-people-row > .vx-num, .vx-people-row > .vx-muted { display:none; }
+    .vx-review { grid-template-columns:1fr; grid-template-rows:auto minmax(0, 1fr); overflow-y:auto; }
+    .vx-review .vx-x-form { grid-row:1; border-right:none; border-bottom:1px solid var(--border); max-height:40vh; }
+    .vx-rv-row { grid-template-columns:18px 30px 90px minmax(0, 1fr) auto; }
+    .vx-rv-row > .vx-rv-date, .vx-rv-row > .vx-rv-speech, .vx-rv-row > .vx-tag,
+    .vx-rv-row > .vx-fit, .vx-rv-row > .vx-rv-other, .vx-rv-row > .vx-rv-old, .vx-rv-row > span:empty { display:none; }
+}
+@media (max-width: 640px) {
+    .map-panel.vx-panel { width:100vw; height:100vh; border-radius:0; }
+    .vx-mapbody { flex-direction:column; }
+    .vx-splitter { display:none; }
+    .vx-side { width:auto; max-width:none; height:45%; border-top:1px solid var(--border); }
+    .vx-title { display:none; }
+    .vx-search input { width:150px; }
+    /* A phone: the name above its buttons — and no head row, whose
+       columns are not there */
+    .vx-people-row, .vx-people-legacy .vx-people-row { grid-template-columns:minmax(0, 1fr); gap:6px; }
+    .vx-people-actions { justify-content:flex-start; }
+    .vx-people-row.vx-people-head { display:none; }
+}
+
+/* ── Name suggestions under a name field (voices.js, vxSuggest*) ────────── */
+.vx-suggest {
+    position:fixed; z-index:4000; max-width:420px; padding:4px;
+    background:var(--bg-2); border:1px solid var(--border-h); border-radius:10px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.45); font-size:0.86rem;
+}
+.vx-suggest-row {
+    display:flex; align-items:center; gap:12px; padding:6px 10px; border-radius:7px;
+    color:var(--tx-1); cursor:pointer;
+}
+.vx-suggest-row b { color:var(--accent); font-weight:700; }
+.vx-suggest-row:hover { background:var(--bg-3); }
+.vx-suggest-row.on { background:var(--accent); color:#fff; }
+.vx-suggest-row.on b { color:#fff; }
+.vx-suggest-n { margin-left:auto; color:var(--tx-3); font-size:0.75rem; font-variant-numeric:tabular-nums; }
+.vx-suggest-row.on .vx-suggest-n { color:rgba(255,255,255,0.8); }
+.vx-suggest-keys { padding:5px 10px 3px; font-size:0.7rem; color:var(--tx-3); border-top:1px solid var(--border); margin-top:3px; }
+.vx-suggest-keys kbd { font-size:0.66rem; }
+
+/* ── Assign: what helps deciding, and the samples in a row ─────────────── */
+.vx-q-stats {
+    display:grid; grid-template-columns:minmax(320px, 2fr) repeat(3, minmax(170px, 1fr));
+    gap:12px; margin:14px 0 4px;
+}
+.vx-q-stats .vx-card { margin:0; }
+.vx-q-stats h3 { margin:0 0 6px; font-size:0.86rem; }
+.vx-q-stats .vx-sub { font-size:0.74rem; margin-top:6px; }
+.vx-q-stats .vx-big { font-size:1.05rem; font-weight:700; color:var(--tx-1); font-variant-numeric:tabular-nums; }
+.vx-near {
+    display:grid; grid-template-columns:minmax(110px, max-content) minmax(60px, 1fr) 112px 56px;
+    align-items:center; gap:10px; padding:4px 6px; border-radius:7px; cursor:pointer; font-size:0.84rem;
+}
+.vx-near:hover { background:var(--bg-3); }
+.vx-near-name { color:var(--tx-1); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.vx-near-bar { height:7px; background:var(--bg-4); border-radius:4px; overflow:hidden; }
+.vx-near-bar i { display:block; height:100%; border-radius:4px; background:var(--tx-3); }
+.vx-near-bar i.hi { background:#3fb950; }
+.vx-near-bar i.mid { background:#d29922; }
+.vx-near-sim { font-variant-numeric:tabular-nums; font-size:0.78rem; color:var(--tx-3); }
+.vx-near-sim.hi { color:#3fb950; }
+.vx-near-sim.mid { color:#d29922; }
+.vx-near-votes { color:var(--tx-3); font-size:0.76rem; text-align:right; font-variant-numeric:tabular-nums; }
+.vx-q-folder { display:flex; justify-content:space-between; gap:10px; font-size:0.82rem; color:var(--tx-2); padding:2px 0; }
+.vx-q-folder span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.vx-q-folder b { color:var(--tx-1); font-variant-numeric:tabular-nums; flex-shrink:0; }
+.vx-seq { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:14px 0 0; }
+.vx-seq select { padding:4px 6px; }
+#assignSamples .vx-samples { grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); }
+.vx-sample.playing { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset; background:var(--bg-2); }
+@media (max-width: 1300px) {
+    .vx-q-stats { grid-template-columns:1fr 1fr; }
+    .vx-q-stats .vx-q-near { grid-column:1 / -1; }
+}
+
+/* ── Help ──────────────────────────────────────────────────────────────── */
+.vx-page-help { overflow-y:auto; }
+.vx-help { max-width:1600px; padding:20px 26px 30px; }
+.vx-help-h { margin:22px 0 10px; font-size:1rem; color:var(--tx-1); }
+.vx-help-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:12px; }
+.vx-help-grid .vx-card { margin:0; }
+.vx-help-steps { margin:10px 0 0; padding-left:22px; color:var(--tx-2); font-size:0.86rem; line-height:1.8; }
+.vx-help-steps b { color:var(--tx-1); }
+.vx-help-words { display:grid; grid-template-columns:180px 1fr; gap:8px 18px; margin:0; font-size:0.85rem; }
+.vx-help-words dt { color:var(--tx-1); font-weight:700; }
+.vx-help-words dd { margin:0; color:var(--tx-2); line-height:1.5; }
+.vx-help-key { display:flex; align-items:center; gap:10px; padding:3px 0; font-size:0.84rem; color:var(--tx-2); }
+.vx-help-key kbd { min-width:44px; text-align:center; }
+
+/* Where you are inside People: "People › Name" (Back: Alt+Left or Esc) */
+.vx-crumbs { display:flex; align-items:center; gap:6px; font-size:13px; min-width:0; }
+.vx-crumbs b { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.vx-crumbs > span { color:var(--tx-3); }
+.vx-crumb { background:none; border:0; padding:0; color:var(--accent); cursor:pointer; font:inherit; }
+.vx-crumb:hover { text-decoration:underline; }
+
+/* The map is loading (voicemap_graph.js mapLoading) */
+.map-loading { position:absolute; left:50%; top:45%; transform:translate(-50%, -50%); z-index:5;
+    display:flex; flex-direction:column; align-items:center; gap:8px; padding:18px 26px;
+    background:var(--bg-2); border:1px solid var(--border); border-radius:12px;
+    color:var(--tx-1); font-size:0.85rem; box-shadow:0 8px 30px rgba(0,0,0,0.35); pointer-events:none; }
+.map-loading[hidden] { display:none; }
+.map-loading-sec { color:var(--tx-3); font-size:0.72rem; min-height:1em; }
+.map-loading-spin { width:26px; height:26px; border-radius:50%; border:3px solid var(--bg-3);
+    border-top-color:var(--accent); animation:mapSpin 0.9s linear infinite; }
+@keyframes mapSpin { to { transform:rotate(360deg); } }

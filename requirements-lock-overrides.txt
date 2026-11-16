@@ -1,0 +1,8 @@
+# One conflict between two pins of requirements-lock-nvidia.txt, settled the
+# way the app runs and is tested:
+#
+# audio-separator 0.44.3 (the separation version the voice vectors were made
+# with) needs beartype <0.19; fastmcp 3.4.7 pulls py-key-value-aio, which asks
+# for beartype >=0.20 — for its OAuth token stores, which the app's MCP server
+# doesn't use. With 0.18.5 every test passes, the MCP ones included.
+beartype==0.18.5

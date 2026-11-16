@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Whisper Transcription Manager</title>
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+<header>
+    <img src="icons/icon32.png" alt="" width="20" height="20">
+    <span class="name">Whisper Transcription Manager</span>
+    <span class="dot" id="dot" title="Server"></span>
+    <span class="gap"></span>
+    <button class="icon" id="btnPanel" title="Open the side panel — read, ask, choose how">▤</button>
+    <button class="icon" id="btnSettings" title="Server address">⚙</button>
+</header>
+
+<section class="settings" id="settings" hidden>
+    <label for="server">Server address</label>
+    <div class="row">
+        <input id="server" type="url" placeholder="http://localhost:9860" spellcheck="false">
+        <button class="b" id="btnSave">Save</button>
+    </div>
+    <div class="row">
+        <input id="token" type="password" autocomplete="off" spellcheck="false"
+               placeholder="Access token — only with the login on">
+        <button class="b" id="btnForgetToken" hidden title="Remove the saved access token">Forget</button>
+    </div>
+    <div class="note" id="serverNote">The address Whisper Transcription Manager is reached at from this browser.</div>
+</section>
+
+<!-- The video the page plays -->
+<section id="mainBox" hidden>
+    <div class="sec">This video</div>
+    <div class="main">
+        <img id="mainThumb" alt="">
+        <div class="main-text">
+            <div class="main-title" id="mainTitle"></div>
+            <div class="main-state" id="mainState"></div>
+        </div>
+    </div>
+    <div class="acts" id="mainActs">
+        <button class="b p" data-main="summarize">⚡ Summarize</button>
+        <button class="b" data-main="transcribe">📝 Transcribe</button>
+        <button class="b" id="mainOptions" title="Choose the template, the language, the model … in the side panel">Options…</button>
+        <button class="b" id="mainRead" hidden title="Summary, transcript and questions in the side panel">▤ Read &amp; ask</button>
+        <button class="l" id="mainSum" hidden>show the summary</button>
+        <button class="l" id="mainOpen" hidden>open ↗</button>
+    </div>
+    <div class="sum" id="mainSummary" hidden></div>
+</section>
+
+<!-- Every other video of the page -->
+<section id="othersBox">
+    <details id="others">
+        <summary class="sec">Videos on this page <span class="count" id="pageCount"></span>
+            <span class="gap"></span><span class="hint" id="pickHint"></span></summary>
+        <input id="filter" type="search" placeholder="Filter by title …" hidden>
+        <div class="videos" id="videos"><div class="note">Looking …</div></div>
+        <div class="row-l"><button class="l" id="btnAll" hidden>select all videos on this page</button></div>
+    </details>
+    <div class="acts" id="acts" hidden>
+        <button class="b p" data-mode="summarize" title="Download, transcribe, and summarize each one">Summarize</button>
+        <button class="b" data-mode="transcribe" title="Download into the upload folder and transcribe">Transcribe</button>
+        <button class="b" id="btnOptions" title="Choose how, in the side panel">Options…</button>
+        <button class="b" id="btnAnalyze" title="One task over all of them together — compare them, summarize them together, find …">Analyze…</button>
+    </div>
+    <div id="analyzeBox" hidden>
+        <textarea id="task" placeholder="e.g. Summarize them together — what they agree on, where they differ."></textarea>
+        <div class="acts"><button class="b p" id="btnStart">Start</button><button class="b" id="btnBack">Back</button></div>
+    </div>
+    <div class="err" id="err" hidden></div>
+</section>
+
+<section>
+    <div class="sec">Sent <span class="gap"></span><button class="l" id="btnApp">open Whisper Transcription Manager ↗</button></div>
+    <div id="recent"><div class="note">Nothing sent yet.</div></div>
+</section>
+<script src="ui.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>

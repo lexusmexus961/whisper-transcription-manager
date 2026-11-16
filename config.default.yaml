@@ -1,0 +1,1769 @@
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  Whisper Transcription Manager — Configuration                         ║
+# ║  All settings are optional. Values that are not set use sensible        ║
+# ║  defaults. Paths are resolved cross-platform.                           ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+#
+# The app loads the first of these that exists: --config, $WHISPER_TM_CONFIG,
+# config.yaml in the user config folder (~/.config/whisper-tm/), ./config.yaml.
+# This file is the defaults and their reasons — don't edit it, write what
+# you change into that config.yaml: it needs only what differs from here, so
+# a newer version's defaults still arrive. The settings page saves into the
+# file that was loaded (without one, into the user config folder), again
+# with only what differs. Some settings it can't change (docs/GUIDE.md:
+# Configuration); edit those in the file and restart.
+
+# ── Server ────────────────────────────────────────────────────────────────
+server:
+  # Who can reach it: 127.0.0.1 is this machine only. "0.0.0.0" opens it to
+  # the network — with no login, everyone there can use it (docs/GUIDE.md: Network
+  # Access); set auth.enabled with a password then.
+  host: "127.0.0.1"
+  port: 9860
+  # Secret key for sessions. Leaving it empty is fine: on first start one is
+  # generated and stored in the file 'secret_key' next to this config
+  # (readable only by the owner). Sessions survive a restart this way.
+  # Set it here only if the key comes from another source
+  # (e.g. secrets management in a container).
+  secret_key: ""
+  # Largest request body in MB. Each upload chunk is one request, so keep it
+  # above upload_chunk_mb.
+  max_upload_mb: 200
+  # Size of one piece of a web upload in MB. 32 passes Cloudflare's 100 MB
+  # request limit; behind a stricter proxy (nginx client_max_body_size …)
+  # set it below that proxy's limit.
+  upload_chunk_mb: 32
+  # Behind a reverse proxy with TLS: send the login cookie over https only,
+  # so it never goes to a plain http:// port of the same host name. Off when
+  # the app is opened over http (the login would not work).
+  secure_cookie: false
+  # Largest uploaded file in GB, put together from its chunks — a client
+  # could otherwise send chunks until the disk is full. 0 = no limit. (An
+  # upload also stops when the disk has less than 1 GB left.)
+  max_upload_gb: 100
+
+# ── Authentication (optional) ──────────────────────────────────────────
+# Simple password protection. For production environments a reverse proxy
+# with LDAP/SSO is recommended (nginx, Traefik, Authelia).
+auth:
+  # Enable auth (false = no password needed)
+  enabled: false
+  # Password for web access: plaintext, or a bcrypt hash — that needs the
+  # bcrypt package in the app's environment
+  # (uv pip install --python .venv/bin/python bcrypt)
+  password: ""
+  # API token for headless/script access (header: X-API-Token)
+  api_token: ""
+  # Days a browser stays logged in, counted from the login (not renewed by
+  # using the app)
+  session_days: 7
+  # Paths reachable WITHOUT auth. An entry ending in "/" opens everything
+  # below it, any other only that exact path.
+  public_paths:
+    - "/api/health"
+    - "/static/"
+
+# ── Allowed roots ──────────────────────────────────────────────────────
+# Which directory trees the application is allowed to touch at all — for
+# reading as well as writing.
+#
+# Why this exists: the media directory can be switched at runtime
+# (directory switch in the frontend), and several endpoints additionally
+# accept a `base_dir` from the request. Without this list the root can be
+# set to "/"; every safe_path() check in the app then checks against a
+# directory chosen by the caller itself and is ineffective.
+#
+# Empty = only the media directory configured at startup (directories.media)
+# including its subtrees. That is the safe default and covers the normal
+# case. Anyone with multiple libraries on different mounts lists them here.
+#
+# The limit holds for requests from other machines. On the machine the
+# server runs on — or with the login on (auth.enabled) — the library folder
+# can be chosen anywhere in the app (the path field at the top, Settings →
+# Folders); that tree then counts as allowed, and the choice is saved.
+#
+#   allowed_roots:
+#     - /mnt/nas/videos
+#     - /mnt/usb/archive
+security:
+  allowed_roots: []
+  # Cross-site protection: a request that changes something (POST, PUT,
+  # DELETE) and comes from a browser page is accepted only from the app's
+  # own page — its Origin must match the address the server was reached at,
+  # and that address must be an IP address or one of this machine's names
+  # (localhost, its host name, <host name>.local) — or from the browser
+  # extension. Requests without an Origin (curl, scripts, the MCP server)
+  # pass that check. Any /api/ request, reading too, must be sent to an IP
+  # address or one of those names (or a name listed below) — against DNS
+  # rebinding, which needs a name; the browser extension passes whatever
+  # the name.
+  #
+  # Reached through a reverse proxy that rewrites the Host header, or under
+  # a DNS name of its own (e.g. "https://whisper.example.org", or the host's
+  # name for a server in Docker)? List those origins here — scheme, name and
+  # port as the browser shows them. Empty = this machine's names only.
+  # Only changeable in the config file, not from the settings page.
+  trusted_origins: []
+  # Browser extensions besides ours that may change the server's state — a
+  # build of the extension from a store has another ID than the one in
+  # browser-extension/manifest.json: its ID (chrome://extensions shows it) or
+  # its origin ("chrome-extension://<id>"). Any other extension is refused.
+  trusted_extensions: []
+
+# ── Directories ─────────────────────────────────────────────────────────
+# All paths support:
+#   - Absolute paths: /mnt/nas/videos
+#   - Relative paths: ./data (relative to the config directory)
+#   - Home expansion: ~/whisper-tm
+#   - Environment variables: ${VIDEO_DIR}
+directories:
+  # Main media directory (default source for scans). Empty = $VIDEO_DIR or
+  # ~/Videos.
+  media: ""
+  # Working directory for temporary files (SSD/NVMe recommended!)
+  # Empty = work/ in the user cache folder (~/.cache/whisper-tm/work on Linux)
+  work: ""
+  # Destination for uploads and link downloads (yt-dlp).
+  # Empty = uploads/ INSIDE the media directory — then the files appear
+  # directly in the library and can be queued immediately. A path outside
+  # the media directory works, but the files then don't show up in any
+  # list.
+  uploads: ""
+  # Where transcripts are stored:
+  #
+  #   "alongside" = .transcripts/ in the folder of the MEDIA FILE (+ DB)
+  #                 /movies/series/episode1.mp4
+  #                   → /movies/series/.transcripts/episode1.mp4.json
+  #                 The location depends solely on the file. The directory
+  #                 chosen in the frontend plays no role — it changes at
+  #                 runtime, and a storage location tied to it would scatter
+  #                 transcripts across as many collection folders as
+  #                 someone has opened directories. Also, two files with the
+  #                 same name from different folders can no longer overwrite
+  #                 each other this way.
+  #                 Older versions collected all transcripts flat in the
+  #                 media root's .transcripts/; that stock is still
+  #                 imported at start, and tools/migrate_transcripts.py
+  #                 moves it next to the files (--collection-dir for
+  #                 another folder).
+  #
+  #   "central"   = ONE collection folder for everything (+ DB). The path's
+  #                 separators appear as "__" in the filename. Practical if
+  #                 the media sits on a read-only share.
+  #
+  #   "database"  = ONLY in the database (no JSON on disk)
+  #
+  # Recommendation for >1000 files: "database" for maximum performance.
+  # The DB is always active — with "alongside"/"central" JSON is also
+  # written (backup, portability). Subtitles for Plex/Jellyfin come from
+  # export_alongside (transcription section), in every mode.
+  transcript_mode: "alongside"
+  # Central transcript directory (only used with transcript_mode: "central").
+  # Empty = transcripts/ in the user data folder.
+  transcripts: ""
+  # Cut clips and audio preview snippets. Empty = Whisper-TM-Clips in the first
+  # of ~/Videos, ~/Video, ~/Movies that exists, else clips/ in the user data
+  # folder — made with the first clip.
+  clips: ""
+  # Per-job log files. Empty = logs/ in the user data folder. (The --debug
+  # log goes to logging.debug_dir, logs-debug/ in the data folder, or
+  # --log-dir.)
+  logs: ""
+
+# ── Queue ─────────────────────────────────────────────────────────────
+queue:
+  # Should the server continue processing the queue immediately on startup?
+  #
+  # true  = yes (default). The queue is persistent and keeps running after
+  #         a restart automatically — even without an open web UI.
+  # false = The worker comes up PAUSED. The queue stays fully intact, but
+  #         nothing is processed until "▶ Resume" is clicked in the web UI.
+  #         Useful during development/debugging and when a server start
+  #         should not immediately occupy the GPU.
+  autostart: true
+
+  # No job starts while the work folder's disk has less than this many GB
+  # free (the decoded sound alone is ~115 MB an hour, a vocal separation
+  # several GB): the queue pauses and says so, instead of failing every file
+  # on a full disk. 0 = don't check.
+  work_min_free_gb: 2
+
+  # How many files are in flight at once (1–4). Every model is still
+  # loaded once and serves one file at a time; what overlaps is the work
+  # around the models — copying from the NAS, ffmpeg, padding, writing,
+  # booking — so the GPU no longer waits for it. Measured on an
+  # 12 GB card (speaker-vector jobs): 45 files 513 s with 1, 412 s with 2,
+  # 399 s with 3; 36 short files 115 s → 73 s → 63 s, 4 lanes 61 s.
+  # 1 = one file after the other. Takes effect on restart.
+  # 3 is the value for a card of 12 GB and more; a smaller card and a CPU
+  # start with 1 unless a number is set here (docs/GUIDE.md: Hardware Support).
+  lanes: 3
+
+  # A file at least this long (seconds) runs with no other one that long
+  # beside it: each holds its whole audio in memory, the diarization
+  # worker a second copy. Short files still overlap with it. 0 = no limit.
+  long_file_sec: 3600
+
+# ── Database ─────────────────────────────────────────────────────────────
+database:
+  # SQLite database path (empty = library.db in the user data folder)
+  path: ""
+  # Search through the FTS5 index (it is kept up to date either way).
+  # false = search reads the transcript folder's JSON files instead — slow,
+  # misses transcripts outside that folder, finds nothing in "database"
+  # mode. Only for a broken index; rebuild it under Settings → Database.
+  fts_enabled: true
+  # Import the transcript folder's JSON files into the DB at startup
+  sync_on_start: true
+  # Import new or changed .transcripts/ folders into the DB while scanning
+  auto_add_dirs: true
+  # Back up the database when the server starts (at most once per
+  # backup_min_hours, below)
+  auto_backup: true
+  # Backups to keep in the backup folder (manual ones included; the oldest
+  # go first)
+  max_backups: 5
+  # Backup folder, ideally on another disk or a NAS (~ and ${VAR} work). It
+  # receives the start-up, manual and change backups instead of backups/
+  # next to the database. Empty = backups/ next to the database, and the
+  # change backups below are off. Created if needed.
+  backup_path: ""
+  # Back up to backup_path after every N transcript changes
+  # (new/edited/deleted). Needs backup_path. 0 = off — then only the
+  # start-up backup (auto_backup) and the manual one in the settings.
+  # Counts ONLY transcripts — scan/index rows do not trigger a backup,
+  # otherwise an index run over tens of thousands of files would flood
+  # the destination.
+  backup_every_changes: 25
+  # At server start, back up only if the newest backup is older than this
+  # many hours — a restart loop must not rotate the good backups away.
+  backup_min_hours: 24
+
+# ── Hardware / Compute ────────────────────────────────────────────────────
+hardware:
+  # Preferred device: "auto", "cuda", "rocm" (experimental), "cpu".
+  # "auto" automatically detects the best available option
+  device: "auto"
+  # Alignment models kept loaded per device (one per language); the least
+  # recently used one is unloaded when another language needs a slot
+  resident_align_models: 2
+  # Low-VRAM mode: unload models after every file; costs ~7% total
+  # compute time due to constant reloading. Otherwise all models stay loaded
+  # (measured: Whisper + Separator + Alignment + Diarization together 8.4 GB
+  # peak on 12 GB). "auto": on for a card of up to 11 GB; true/false decide.
+  low_vram: "auto"
+  # CUDA OOM: An entry NEVER becomes an error on "out of
+  # memory". It stays queued (with VRAM-sparing and half the WhisperX
+  # batch), and the worker waits before the next attempt until enough VRAM
+  # is free — for at most this many minutes. If the card doesn't free up,
+  # or the sparing run also fails, the queue PAUSES with a system warning
+  # instead of burning through the next files as well (without the wait,
+  # dozens of retries fail within the same second).
+  # Measured: WhisperX large-v3 needs 5.6–6.8 GB during the step; 8000 MB
+  # free means "fits, even with neighbors". At most 80 % of the card is
+  # waited for (6.4 GB on an 8 GB card). 0 = don't wait (retry immediately).
+  oom_min_free_mb: 8000
+  oom_wait_min: 10
+  # Unload resident models after N minutes of idleness (free VRAM) — so a
+  # server running alongside doesn't permanently block the GPU (e.g. while
+  # another program uses the same card). The next job loads them again automatically
+  # (~3–5 s one-time). 0 = never unload.
+  model_idle_min: 10
+  # Run diarization in its OWN process (default).
+  # pyannote has no time limit. If it hangs in its own process, the job is
+  # no longer abortable and the GPU stays occupied until the server
+  # restarts — a watchdog doesn't help, because Python can't kill a thread.
+  # A child process, on the other hand, can be terminated forcibly, and the
+  # operating system cleans up its CUDA context completely (measured: GPU
+  # back to its baseline value). It is LONG-LIVED and keeps the model — a
+  # fresh process per file measured 4.96 s, which would be about 140 h
+  # across a library of 100,000 files.
+  # false = in the server's own process; then a hang is not abortable
+  # (emergency exit for environments where no child process can start).
+  diarization_subprocess: true
+  # Fraction of the audio duration a diarization may take at most before it
+  # is considered hung and the worker is killed.
+  # Measured on a 12 GB card: 1.9 h of speech in 91.7 s = 75x realtime.
+  # 0.5 (half the audio duration) is thus roughly 37 times the measured
+  # value — the limit is meant to catch a HANG, not punish a slow card.
+  # The lower bound is always 900 s (loading the model alone costs 5 s).
+  # 0 = no time limit (only manual abort).
+  diarization_deadline_factor: 0.5
+  # The diarization worker is long-lived so the model doesn't need to be
+  # reloaded per file (4.96 s). Precisely because of that it accumulates:
+  # measured over 10 GiB after several day-long recordings, and it never gives
+  # it back — these are cached tensors from pyannote/torch, not the audio
+  # track (numpy returns that immediately via mmap).
+  # Above this limit it is discarded after the job and restarted fresh on
+  # the next one: 5 s cost against an OOM killer that could take down a
+  # day-long file and possibly the server with it. 0 = no cap.
+  diarization_worker_max_gb: 6.0
+  # VRAM limit of the diarization worker, in MiB. pyannote itself needs
+  # about 1.6 GiB, whatever the recording's length (measured on short voice
+  # notes and on recordings of several hours). Without a limit cuDNN picks a
+  # convolution algorithm for the speaker-embedding model whose workspace
+  # takes what is free: 9.2 GiB in one allocation, the worker at 10 GiB for
+  # a few-second voice note and the card at 11.9 of 12 GiB. With the limit
+  # it falls back to a frugal algorithm — the same segments, and about a
+  # quarter faster. A soft limit: a request that really
+  # needs more runs once without it. Takes effect when the worker starts.
+  # 0 = no limit.
+  diarization_vram_cap_mb: 4096
+  # Cut out silence before diarization.
+  # On very long recordings diarization is the most expensive step — longer
+  # than the separation — and it used to run over the entire file,
+  # including hours of guaranteed silence: long recordings are often more
+  # than half silence. Detecting it costs a few seconds on the finished
+  # 16 kHz track.
+  # Cutting is done in ONE piece and the timeline is recalculated
+  # afterward — diarizing chunk-by-chunk would be wrong, because pyannote
+  # reassigns its speaker IDs on every call (core/diar_silence.py).
+  # Below 15% savings, no cutting is done.
+  diarization_skip_silence: true
+  # Warn after a job when the server process holds more than this many GB
+  # (RAM + swap) — a safety net against something accumulating over a long
+  # run, not an alarm (core/debug.py). Empty = 60 % of the machine's
+  # memory; 0 = off.
+  server_memory_warning_gb: ""
+  # GPU index (with multiple GPUs). It reaches Whisper only — alignment,
+  # diarization, vocal isolation and voice vectors run on the first CUDA
+  # card. With several NVIDIA cards, choose the card for the whole app by
+  # starting it with CUDA_VISIBLE_DEVICES=<n> (and CUDA_DEVICE_ORDER=PCI_BUS_ID,
+  # so the number means the same card as nvidia-smi) and leave this at 0.
+  gpu_index: 0
+  # For testing: treat the card as having this many MiB of memory (0 = its
+  # own). The defaults the app chooses for the machine and the low-VRAM
+  # "auto" follow it — the card itself does not shrink.
+  assume_vram_mb: 0
+  # Compute type: "float16", "float32", "bfloat16", "int8", "int8_float16",
+  # "int8_float32"
+  # "auto" chooses based on hardware
+  compute_type: "auto"
+  # Chunk processing settings (OOM protection)
+  # Whisper transcribes IN ONE PIECE (splitting into 600 s pieces
+  # cut sentences mid-word at every boundary — 25% of long
+  # transcripts were affected, and neither quality nor memory require it).
+  # Only ABOVE this limit is it split into
+  # large blocks with 30 s overlap (lossless, midpoint dedup); the audio
+  # array costs ~0.23 GB RAM per hour.
+  asr_block_max_sec: 54000
+  sep_chunk_duration_sec: 1800
+  sep_overlap_sec: 3
+
+# ── Transcription ─────────────────────────────────────────────────────────
+transcription:
+  # Default model: tiny, base, small, medium, large-v2, large-v3, turbo
+  # large-v3: the quality measurements behind the defaults ran with it —
+  # turbo is faster, its quality less proven.
+  # This is the value for a card of 12 GB and more. On a smaller card, or
+  # without a GPU, the app starts with turbo unless a model is set here
+  # (docs/GUIDE.md: Hardware Support — what the app chooses by itself).
+  default_model: "large-v3"
+  # Default language: "auto" detects it for each recording, or an ISO code.
+  # A library in one language is better off with its code: detection
+  # guesses wrong more often on noisy recordings — and a fixed language
+  # makes Whisper write every recording in that language.
+  default_language: "auto"
+  # Speaker diarization active by default (costs noticeable time; enable
+  # per dialog when needed)
+  default_diarize: false
+  # Default number of speakers (0 = automatic)
+  default_num_speakers: 0
+  # Write speaker vectors alongside (only effective together with
+  # diarization). Each speaker's clean speech (only one person talking) is
+  # cut into windows of up to 30 s (none under 4 s), and each window
+  # produces a 192-dimensional speaker vector in `speaker.db`. This
+  # later allows answering WHO was involved in a recording and roughly
+  # WHERE. Cost: about one second per window; the audio is already in
+  # memory at that point anyway. Off = the speaker information is discarded
+  # after assignment.
+  speaker_vectors: true
+  # Without vocal isolation the speaker vectors would be the RAW version
+  # and thus not comparable to the remainder — for the vector, separation is
+  # proven to help (100% vs. 89% match rate on several hundred pairs). When this switch
+  # is on, only the 30-second windows are separated instead of the whole
+  # file: per window and per track, practically the same vector comes out
+  # (similarity 0.984 resp. 0.994) — it's purely a matter of time.
+  # Cost about one second per window; the prefilter skips clean material on
+  # its own. Off = such files get NO speaker vectors at all — a raw vector
+  # would be filed next to separated ones it can't be compared with.
+  # About a second per window is a GPU's time. Without one, and on a card of
+  # up to 4 GB (the model does not fit), the app starts with it off unless
+  # it is set here: recordings then get no voice vectors, so people are not
+  # found again across them (docs/GUIDE.md: Hardware Support).
+  speaker_window_separation: true
+  # Hugging Face token for the diarization model. The model
+  # (pyannote/speaker-diarization-community-1) is free but gated: accept its
+  # conditions at https://huggingface.co/pyannote/speaker-diarization-community-1
+  # while signed in, then create a token of type "Read" at
+  # https://huggingface.co/settings/tokens. Needed once — the downloaded model
+  # loads from the cache without it. Empty = the HF_TOKEN environment
+  # variable. `whisper-tm --hf-token` checks a token, sets it here and
+  # downloads the model.
+  hf_token: ""
+  # Drop Whisper artifacts while transcribing: segments whose text matches
+  # one of the hallucination_patterns below, and segments without a single
+  # letter or digit ("…", "♪ ♪"). Off by default — what the patterns would
+  # take out of the existing transcripts can be tried under Settings →
+  # Transcription → Clean-up and applied under "Clean existing
+  # transcripts", with a dry run first.
+  filter_hallucinations: false
+  # What counts as an artifact — text Whisper invents on music or silence,
+  # like a TV station's subtitle credit. Regular expressions, one per list
+  # entry (one per line on the settings page). A segment is dropped when
+  # its WHOLE text matches one; case and the punctuation around the text
+  # don't matter, ".*" stands for any text. A pattern never cuts words out
+  # of a longer segment.
+  #
+  # Patterns rather than exact phrases: a credit with a year behind it
+  # would never match an exact phrase. The shipped ones are subtitle
+  # credits Whisper commonly invents on music or silence — two from German,
+  # two from English television and community subtitles.
+  hallucination_patterns:
+    - 'Untertitelung.*ZDF.*'
+    - 'Untertitelung.*BR \d{4}'
+    - 'Subtitles by the Amara\.org community'
+    - 'Transcription by CastingWords'
+  # Minimum segment length in characters
+  min_segment_chars: 2
+  # Very quiet recordings (average level below this dBFS value) get a PURE
+  # gain to ~−26 dB before transcription (no compression, no loudnorm —
+  # both raise noise in speech pauses). Whisper is level-invariant above
+  # roughly −40 dB; the gain only helps genuine whisper/voice-note cases.
+  # 0 = off.
+  gain_below_db: -40.0
+  # Enable word-level timestamps (more precise per-word timestamps)
+  word_timestamps: false
+  # Segment splitting with word timestamps:
+  # Maximum segment duration in seconds (for subtitle quality)
+  max_segment_duration: 3.5
+  # Same for CJK (ja/zh/ko) — spoken Japanese is dense, shorter cues read
+  # better (e.g. 1.0 for very short, fluidly changing cues).
+  max_segment_duration_cjk: 3.0
+  # Maximum words per segment (for western languages)
+  max_segment_words: 8
+  # Maximum CHARACTERS per segment for CJK (Japanese/Chinese/Korean).
+  # Readability guideline (Netflix): ~4 characters/second — 15 characters
+  # fit a ~3.5 s cue; anyone lowering max_segment_duration_cjk should lower
+  # this too.
+  max_segment_words_cjk: 15
+  # Pause between words (sec.) after which a new segment starts (Japanese,
+  # Chinese, Korean: at most 0.15 s)
+  word_pause_threshold: 0.3
+  # Only split at natural boundaries (pauses/punctuation): the duration/
+  # character limits then no longer FORCE a cut mid-sentence — they only
+  # make the soft boundaries more eager. Cues can become longer than the
+  # maximum, but sentence flow is never chopped.
+  split_natural_only: false
+  # ── Vocabulary presets (Whisper initial_prompt) ──
+  # Word lists against mangled proper names.
+  # Selectable in the transcription dialog; maintained in the settings panel.
+  # Budget: Whisper only uses the last ~224 tokens — keep it short,
+  # most important items at the END of the list.
+  #
+  # IMPORTANT about the form: for Whisper, a vocabulary is the text
+  # allegedly spoken immediately BEFORE the audio — it carries over its
+  # STYLE (OpenAI prompting guide). A plain comma list thus tells the model
+  # "a comma list is being spoken here", and on unclear audio it continues
+  # exactly that: whole segments then consist of nothing but the word
+  # list. A SENTENCE containing the terms is noticeably more stable
+  # ("The conversation is about Alice, Bob and ACME.").
+  # Known and open in openai/whisper #1594, faster-whisper #1179,
+  # whisperX #693.
+  #
+  # The shipped one is an example of the form: a sentence, the names that
+  # get mangled most, the most important ones at the end.
+  vocab_presets:
+    Tech & gaming: >-
+      The conversation is about Discord, Steam, Twitch and YouTube, about
+      NVIDIA and AMD graphics cards, Linux and Windows, and about games like
+      Counter-Strike, League of Legends, Valorant and The Sims.
+  # The vocabulary the transcription dialogs start with — a name from the
+  # list above; empty = none. Only a start value: every job picks its own,
+  # and a vocabulary only helps recordings it fits.
+  default_vocabulary: ""
+  # Repetition brakes that only apply when a vocabulary is active.
+  # WhisperX's batch path is the only one of all Whisper safety gates that
+  # passes these two through to the decoder (asr.py:61-72); the
+  # temperature fallback, compression_ratio_threshold & co. are present in
+  # its defaults but are never read anywhere. Without these, nothing brakes
+  # a derailed repetition.
+  # 0 resp. 1.0 disables it. Deliberately not global: they could otherwise
+  # also cut off genuine repetitions in spoken language.
+  vocab_no_repeat_ngram: 5
+  vocab_repetition_penalty: 1.1
+  # Export transcripts alongside videos (SRT/TXT for Plex/Jellyfin)
+  export_alongside: false
+  # Export formats alongside videos: srt, txt, json
+  export_alongside_formats: ["srt"]
+
+# ── Vocal Isolation ───────────────────────────────────────────────────────
+vocal_isolation:
+  # NOTE on memory usage: vocal isolation ALWAYS runs chunked.
+  # audio-separator keeps the entire audio as float32 in RAM (input + vocals
+  # + instrumental) — consumption grows linearly with duration. The chunk
+  # size (hardware.sep_chunk_duration_sec) is thus the memory ceiling:
+  # 30 minutes ≈ 4 GB peak, regardless of how long the file is.
+
+  # Default model — mel_roformer_kim, the only one offered (the best
+  # measured quality without loss of speed).
+  default_model: "mel_roformer_kim"
+  # Available models (name → audio-separator filename).
+  # audio-separator downloads models automatically on first use.
+  # .onnx = MDX-Net architecture, .ckpt = MDXC/Roformer architecture.
+  # Description/quality/speed per model → core/vocal_isolation.py: MODEL_INFO
+  # (that is the source for the annotated GUI selection). Add new models
+  # BOTH here AND there with the same key.
+  models:
+    # Deliberately reduced to ONE model — mel_roformer_kim won on speed,
+    # repetition loops and word recall in the quality tests.
+    # bs_roformer remains as a silent fallback (only kicks in if the
+    # default checkpoint fails to load) and does not appear in any picker.
+    mel_roformer_kim: "vocals_mel_band_roformer.ckpt"
+    bs_roformer: "model_bs_roformer_ep_317_sdr_12.9755.ckpt"
+  # Vocal isolation enabled by default — measured better: +23 points word
+  # recall on loud material, no harm on clean material; the chunk prefilter
+  # skips it anyway where there's nothing to separate.
+  # The separation model holds about 6.5 GB: on a card of up to 6 GB and
+  # without a GPU the app starts with it off unless it is set here
+  # (docs/GUIDE.md: Hardware Support).
+  default_enabled: true
+  # Save audio alongside the source file
+  default_save_alongside: false
+  # ── MDX-Net parameters (.onnx models) ──
+  # None of the offered models is an .onnx model — these only matter for an
+  # MDX-Net model added to `models` above by hand.
+  # MDX segment size (128, 256, 512) — UVR5 default: 256
+  mdx_segment_size: 256
+  # MDX overlap (0.001 - 0.999) — UVR5 default: 0.25
+  mdx_overlap: 0.25
+  # MDX batch size — UVR5 default: 1
+  mdx_batch_size: 1
+  # ── MDXC/Roformer parameters (.ckpt models) ──
+  # MDXC overlap — for Roformer a STEP SIZE in seconds between separation
+  # windows (not a divisor as the CLI help claims). The step is capped at
+  # the window: mel_roformer_kim has an 11 s window, so 11 and above means
+  # no overlap (fastest); the bs_roformer fallback has an 8 s window.
+  # Smaller = more overlap: slower, marginally smoother. Default: 8.
+  # segment_size/batch_size for .ckpt were removed: measured to be
+  # ineffective (bit-identical output, or only takes effect with an
+  # override flag) — both measured.
+  mdxc_overlap: 8
+  # Autocast (fp16 mixed precision) for separation: 1.39x faster with
+  # practically identical output (SNR 76 dB, measured). Only disable if a
+  # GPU without usable fp16 performance is used.
+  use_autocast: true
+  # ── Chunk prefilter (separation only when needed) ──
+  # Checks each 30-min chunk BEFORE separation (Silero-VAD + pause level,
+  # ~1 s CPU per sample window): chunks where speech pauses are practically
+  # silent have nothing to separate — the original goes straight to the
+  # vocals track. Measured to save ~39% of separation time (long
+  # recordings consist mostly of quiet stretches) and avoids separation
+  # artifacts on clean material. Calibrated with 0 misjudgments against a
+  # real separation ground truth — when in doubt, it ALWAYS separates.
+  prefilter: true
+  # Relative threshold: skip if pause level < speech level − 25 dB
+  prefilter_rel_db: -25.0
+  # Absolute fallback threshold (dBFS) when there's too little speech for
+  # the relative rule (< 5% speech ratio)
+  prefilter_abs_db: -50.0
+  # Below this a window counts as silence (dBFS)
+  prefilter_silence_db: -60.0
+  # Minimum speech ratio for the relative rule
+  prefilter_min_speech_share: 0.05
+
+# ── Scanner ───────────────────────────────────────────────────────────────
+scanner:
+  # File extensions (in addition to standard video/audio)
+  extra_video_extensions: []
+  extra_audio_extensions: []
+  # File and folder names to skip (glob patterns, matched against the
+  # name, not the path)
+  ignore_patterns:
+    - ".*"
+    - "__*"
+    - "node_modules"
+    - ".Trash*"
+    - "@eaDir"
+    - "#recycle"
+    - ".zfs"
+  # Parallel file accesses (stat/status) while scanning. On network drives
+  # (NAS/SMB/NFS) every file access is a round trip — parallelism hides the
+  # latency and makes recursive scans many times faster (32 → ~30x).
+  # On local SSDs a higher value brings little; on a slow NAS 64 may help.
+  scan_workers: 32
+  # Parallel directory reads during the recursive walk (file DISCOVERY).
+  # Every directory level is a network round trip on NAS/SMB — reading in
+  # parallel drops the root walk of large libraries from minutes to
+  # seconds. 1 = serial walk.
+  walk_workers: 16
+  # Dead-mount detection during the walk: this many consecutive directory
+  # TRANSPORT errors (Host is down, I/O error, …) without a single success
+  # → abort with a clear error message instead of grinding for hours.
+  # 0 = disabled.
+  walk_max_error_streak: 150
+  # …and: this many seconds without a SINGLE directory response (all
+  # workers hanging in blocking reads on a dead SMB) → outage detected.
+  # 0 = disabled.
+  walk_stall_timeout_sec: 180
+  # WAIT instead of aborting on a detected outage: the root directory is
+  # probed periodically; if the network drive comes back (the SMB service
+  # of a NAS likes to briefly clog up under load), the scan
+  # continues and catches up on the failed directories.
+  walk_wait_for_mount: true
+  # Probe interval while waiting (seconds)
+  walk_wait_probe_sec: 15
+  # Wait at most this many minutes, then abort anyway. 0 = unlimited
+  # (the scan still ends as soon as the browser closes the connection).
+  walk_wait_max_min: 0
+  # Watch the open folder for new files and show a notice when some appear
+  # — it doesn't add them (a scan does, or continuous scanning: autoscan).
+  # Each round walks the whole tree, costly on a large NAS.
+  watch_enabled: false
+  watch_interval_sec: 30
+
+# ── Continuous scanning: new files found and transcribed by themselves ──
+# The top bar's switch and Settings → Library → Scanning. The first round of
+# a folder only notes what is there; what appears AFTER that is added to the
+# library and (with transcribe) queued at the end of the queue with the
+# transcription defaults. Rounds only read folders whose time changed.
+autoscan:
+  enabled: false
+  # Queue new files for transcription (off = only add them to the library)
+  transcribe: true
+  # Minutes between two rounds (a round never starts before twice the last
+  # one's duration has passed)
+  interval_min: 15
+  # Folders to watch; empty = the whole library (security.allowed_roots)
+  folders: []
+  # A new file must not change for this many minutes before it is touched
+  # (a big video is seen long before it is copied completely)
+  settle_min: 2
+  # Every this many hours a round reads every folder, not only the changed ones
+  full_every_h: 6
+
+# ── YouTube/link downloads (yt-dlp, add dialog) ───────────────────
+youtube:
+  # Load only the audio track (yt-dlp -x, bestaudio) instead of video as
+  # MP4 — saves a lot of storage/bandwidth when only transcription is needed
+  # anyway.
+  audio_only: false
+  # Additional yt-dlp arguments, appended to the command (space-separated,
+  # quoted as in a shell). Examples:
+  #   --limit-rate 5M
+  #   --sub-langs en --write-subs
+  extra_args: ""
+  # Links to this machine or the local network (127.0.0.1, 192.168.…, a
+  # name that resolves there) are refused: links also come from Ask and the
+  # MCP tools, and through them from text a language model read. true lets
+  # them through — a media server in your network, say. Only in this file.
+  # The check reads the link's own host. yt-dlp resolves the name again,
+  # follows redirects and fetches the addresses inside a manifest by
+  # itself: a public link that redirects into the network is not stopped.
+  allow_private_hosts: false
+
+# ── Videos from the browser extension (POST /api/ingest) ───────────────
+# How a video sent from the browser is transcribed and summarized — its own
+# defaults, apart from the general ones: a YouTube video can be in any
+# language, and a talk may want another template than the recordings of the
+# library. Empty ("" or null) = the general setting (transcription above,
+# llm.auto_summarize_* below). The extension's ⚙ edits these; a send can
+# set any of them for itself.
+ingest:
+  defaults:
+    # Whisper model ("" = transcription.default_model), language ("auto" =
+    # detect it — not the general default_language: a German default would
+    # turn an English video into a German translation), speaker detection,
+    # number of speakers (0 = automatic), vocal isolation, vocabulary preset
+    model: ""
+    language: auto
+    diarize: null
+    numSpeakers: null
+    vocal_isolation: null
+    vocab_preset: ""
+    # The summary: its template (a name of llm.presets), its model (a name
+    # of llm.models), the language it is written in ("" = the video's,
+    # "de" = German, whatever the video speaks)
+    summary_preset: ""
+    summary_model: ""
+    summary_language: ""
+
+# ── MCP server ────────────────────────────────────────────────────────────
+# Makes the library accessible to AI clients (Model Context Protocol). It
+# talks to the app's HTTP API — as a process of its own when started by hand
+# or by a client, as threads inside the app with autostart_* below (and Ask,
+# the app's chat, uses it in-process):
+#   python -m whisper_tm.mcp_server             # stdio, for local clients
+#   python -m whisper_tm.mcp_server --http      # over the network, port below
+#   python -m whisper_tm.mcp_server --openapi   # for OpenAPI clients
+#   python -m whisper_tm.mcp_server --check     # can it reach the app?
+# Requires the package fastmcp (pip install -e '.[mcp]'; the setup does).
+mcp:
+  # Does the app start the MCP server's network services right away?
+  #
+  # Otherwise they have to be started by hand after every restart, and since
+  # a service that isn't running logs nothing, its absence only shows when a
+  # tool doesn't respond. Read at app start: a change needs a restart.
+  #
+  # Affects ONLY the two network services. The stdio path doesn't need
+  # this: there the AI client starts the server itself.
+  autostart_openapi: false   # OpenAPI service (Open WebUI et al.), port below
+  autostart_http: false      # MCP over HTTP, port below
+  # Where does the app run? Empty = http://127.0.0.1:<server.port>. Only
+  # set this if the MCP server runs on a DIFFERENT machine than the app.
+  base_url: ""
+  # Address and port of the network services (--http, --openapi and both
+  # autostarts). Defaults to local-only access; for access from the network
+  # set to "0.0.0.0".
+  host: "127.0.0.1"
+  port: 5399
+  # Do the network services (MCP over HTTP and OpenAPI) require the access
+  # token? Clients send it as "Authorization: Bearer <token>" (or as
+  # X-API-Token). Without it, anyone who reaches the port may use the
+  # tools — with host 0.0.0.0 the whole network, and with allow_writes on
+  # that includes transcribing and downloading. Switched off it holds only
+  # while host is 127.0.0.1 (this machine alone; requests sent to a name
+  # that isn't this machine's are refused then — DNS rebinding); on the
+  # network the token is required anyway. The stdio path needs none.
+  require_token: true
+  # The access token. Empty = generated on first use and kept in the file
+  # "mcp_token" next to this config.yaml, readable only by its owner — like
+  # the secret_key, it doesn't belong in a file that may get shared.
+  # Settings > MCP server shows it and makes a new one — in a browser on this
+  # machine, or anywhere with the login on.
+  token: ""
+  # May an AI client TRIGGER something — upload, download, transcribe, LLM
+  # tasks, queue control? false = a pure read tool (Ask's actions too).
+  # Off unless switched on (Settings → MCP server → Allow work): what a
+  # client reads — a transcript, a web page — can carry instructions for
+  # it, and a client's transcription goes to the front of the queue and
+  # runs even while the queue is paused.
+  allow_writes: false
+  # Upper limit per call to transcribe_many. Protects against a client
+  # accidentally queuing tens of thousands of files.
+  max_files_per_call: 50
+  # How long the transcribe tool waits for its result by default (a client
+  # may name another timeout_min) before it returns the job ID. This does NOT
+  # abort anything — the work keeps running, only the waiting ends. The
+  # other tools have defaults of their own (download 20, summarize 15,
+  # translate/proofread 30 minutes).
+  time_limit_min: 30
+  # What the MCP server sends to THIS app — only needed when the app's own
+  # login is on (auth.enabled). Empty = the token from the auth section.
+  # Not the access token above: that one is what clients send to the MCP
+  # server.
+  api_token: ""
+  # Under which address does a BROWSER reach the app? Only for the audio
+  # previews the server places in its responses (`with_audio`, `clip`).
+  #
+  # Not the same as base_url: the MCP server calls the app via 127.0.0.1
+  # because it runs alongside it. The player, however, sits in a chat on
+  # ANOTHER machine, and there 127.0.0.1 points to itself — the players
+  # would stay silent and look like broken clips.
+  #
+  # Leave empty: then the loopback address from base_url is swapped for
+  # this machine's network address. Only set this if the app sits behind a
+  # hostname or a reverse proxy.
+  listen_base_url: ""
+  # ── OpenAPI (--openapi) ───────────────────────────────────────────────
+  # Some clients — Open WebUI, for example — don't speak MCP, but only
+  # integrate tools as an "OpenAPI tool server". The same server can do
+  # that too; the tools are the same.
+  # The token is the one above (require_token / token).
+  openapi_port: 5400
+
+# ── Search ─────────────────────────────────────────────────────────────────
+search:
+  # Results per request when the caller sets no limit (a request may ask for
+  # up to 5,000)
+  max_results: 1000
+  # Context lines before/after a hit
+  context_segments: 2
+  # Enable fuzzy search (slower, but more tolerant)
+  fuzzy_enabled: false
+  # Fuzzy strictness (0.5 - 1.0, higher = stricter). One wrong letter is
+  # always allowed; this sets from which word length two are (0.8 → from
+  # 10 letters, 0.5 → from 4)
+  fuzzy_threshold: 0.8
+  # Stopwords for word statistics ("en", "de")
+  stopword_languages: ["en"]
+
+# ── Ask (the chat tab of the search) — core/chat.py ─────────────────────
+# The connected language model, with the tools of the app's own MCP server.
+# The model is chosen under AI models → tasks ("chat"); the chat needs an
+# OpenAI-compatible endpoint (…/v1).
+chat:
+  # Let the chat use tools that start work: transcribe, download,
+  # summarize, translate, proofread, the queue (mcp.allow_writes must be on
+  # too). Off = it only reads and searches.
+  allow_actions: false
+  # Let the model think before it answers (slower, sometimes better)
+  thinking: false
+  temperature: 0.3
+
+# ── Analyses (search workspace) ──────────────────────────────────────────
+analysis:
+  # One task over many recordings (search workspace → Analyses). A set that
+  # fits into one call of at most `single_tokens` is read in one go; a larger
+  # one in parts of `part_tokens`, then one answer from the notes of all parts.
+  # Both are capped by the model's context. Smaller parts read more carefully
+  # ("find every …") and take more calls.
+  part_tokens: 24000
+  single_tokens: 48000
+  # What one analysis takes at most — a larger set is refused with a message
+  max_files: 20000
+  max_parts: 400
+
+# ── LLM (summary, correction, translation) ──────────────────────────────
+llm:
+  # API endpoint:
+  #   Ollama native:  http://localhost:11434      (with think support!)
+  #   OpenAI-compat:  http://localhost:11434/v1   (no think support)
+  #   OpenAI:         https://api.openai.com/v1
+  #   vLLM/LiteLLM:   http://host:port/v1
+  # Rule: endpoint WITHOUT /v1 → Ollama native API, WITH /v1 → OpenAI-compatible
+  endpoint: ""
+  # API key (empty = no auth, e.g. for local Ollama). A key with an empty
+  # endpoint is offered as OpenAI (https://api.openai.com/v1) in Settings →
+  # AI models — save it there once: the jobs need the endpoint, which saving
+  # fills in.
+  api_key: ""
+  # Model name. Empty = the model assigned to the task, else the provider's
+  # default; llama.cpp answers with whatever model it loaded, OpenAI and
+  # Ollama need a name.
+  #
+  # endpoint/api_key/model mirror the first active provider of Settings →
+  # AI models (which holds the servers), and decide whether LLM jobs run.
+  model: ""
+  # Max tokens for the response. Automatically clamped to context/2 (to
+  # 16,384 while the context size is unknown) — a response limit ABOVE the
+  # context window is always a mistake.
+  max_tokens: 4096
+  # Context size: 0 = detect AUTOMATICALLY from the server (llama.cpp /props,
+  # /v1/models, Ollama /api/show). Only set this if detection doesn't work
+  # or a deliberate limit is wanted (for Ollama the value is additionally
+  # sent as num_ctx → protects against VRAM overflow).
+  context_size: 0
+  # Temperature for summaries (0.0 = deterministic).
+  # Correction/translation have their own, lower values (see below).
+  temperature: 0.3
+  # Read timeout per LLM call in seconds (local models need minutes for
+  # long prompts; connection setup always stays at 10 s). Correction and
+  # translation cap it at 900 s per chunk.
+  timeout: 1800
+  # Retry attempts on network/server errors (5xx/timeout), with
+  # exponential backoff. 4xx is never retried, nor is a streamed answer.
+  retries: 3
+  # Extended thinking
+  # Ollama native: sets "think": true/false directly.
+  # OpenAI-compatible: sends a "thinking" object (the format of Anthropic's
+  # models; servers that don't know it ignore it or answer 400). While it is
+  # on, no temperature is sent. Correction/translation force thinking=off —
+  # deterministic data transformation.
+  thinking: false
+  # Budget tokens for thinking, sent with the "thinking" object (0 = none sent)
+  thinking_budget: 0
+
+  # ── Chunking (transcripts over the context budget) ────────────────────
+  chunking:
+    # Segments from the previous chunk carried along as reading context
+    overlap_segments: 3
+    # Fraction of the context left free as a safety margin
+    # (token estimation is a heuristic, ±15%)
+    safety_margin: 0.10
+
+  # ── Transcript correction (confidence-guided, with review) ─────────────
+  correction:
+    # Words below this alignment score count as uncertain and are marked
+    # in the prompt; segments with such words are reviewed
+    score_threshold: 0.40
+    # Segments below this avg_logprob are also reviewed
+    logprob_threshold: -0.80
+    # Low — correction should be reproducible, not creative
+    temperature: 0.2
+    # Suggestions with lower LLM self-assessed confidence are discarded
+    min_confidence: 0.5
+    # If a chunk wants to change more than this fraction of its segments,
+    # it is discarded entirely (over-correction signal)
+    max_edit_share: 0.5
+    # Custom correction rules (replace the rules part of the system prompt:
+    # what is corrected, what stays untouched). Empty = built-in rules.
+    # The format part (marker syntax, JSON output) is ALWAYS appended and
+    # cannot be replaced — it is the contract with validation.
+    system_prompt: ""
+
+  # ── Transcript translation ─────────────────────────────────────────────
+  translation:
+    temperature: 0.3
+    # Already translated source→target pairs carried along per chunk as
+    # consistency context (proper names, forms of address, register)
+    context_pairs: 5
+
+  # Default template: the system prompt of a summary that names no
+  # template (automatic summaries without one; the dialog starts with the
+  # template that has this text). Source of truth is core/llm/prompts.py —
+  # mirrored here so it is visible and adjustable in settings.
+  system_prompt: |
+    Summarize the transcript as a structured overview.
+
+    Open with two or three sentences: what kind of recording this is, who is
+    talking and what comes out of it. Then cover the content in short sections
+    with headings (## …), in the order it comes up.
+
+    Be concrete: names, numbers, decisions, results and open questions belong
+    in it, not just the topics ("the budget rises to €12,000", not "the budget
+    is discussed").
+
+    Rules:
+    - Only what is said in the transcript — no outside knowledge, no guesses.
+    - If something stays unclear or is cut off, say so instead of smoothing it
+      over.
+    - No preamble such as "Here is the summary" — start with the content.
+    - Write in the language of the transcript.
+
+  # ── Automatic summarization after transcription ──────────────────
+  # Start state of the 🤖 checkbox in the transcription dialogs (can be
+  # toggled per run there). A job queued with it runs the summary as a
+  # follow-up step on the server; jobs from the MCP server or the API are
+  # not summarized by this setting.
+  auto_summarize: false
+  # Template name from llm.presets (empty = system_prompt above)
+  auto_summarize_preset: ""
+  # Model ID (empty = the model assigned to the summary task, else llm.model)
+  auto_summarize_model: ""
+
+  # Quickly selectable models (name → model ID), e.g.
+  #   qwen3: "qwen3:32b"
+  #   gpt-4o-mini: "gpt-4o-mini"
+  models: {}
+
+  # Templates for the summarize dialog (name → system prompt). Mirrored
+  # from core/llm/prompts.STANDARD_PRESETS; an existing config picks up
+  # new versions via Settings → AI tasks → "⬇ Built-in templates" (templates
+  # you wrote yourself are left untouched).
+  presets:
+    Summary: |
+      Summarize the transcript as a structured overview.
+
+      Open with two or three sentences: what kind of recording this is, who is
+      talking and what comes out of it. Then cover the content in short sections
+      with headings (## …), in the order it comes up.
+
+      Be concrete: names, numbers, decisions, results and open questions belong
+      in it, not just the topics ("the budget rises to €12,000", not "the budget
+      is discussed").
+
+      Rules:
+      - Only what is said in the transcript — no outside knowledge, no guesses.
+      - If something stays unclear or is cut off, say so instead of smoothing it
+        over.
+      - No preamble such as "Here is the summary" — start with the content.
+      - Write in the language of the transcript.
+    Short Summary: |
+      Summarize the transcript in at most five sentences of running text — no
+      headings, no lists.
+
+      Say what it is about, who is talking and what comes out of it.
+
+      Rules:
+      - Only what is said in the transcript — no outside knowledge, no guesses.
+      - No preamble such as "In this video…" — start with the content.
+      - Write in the language of the transcript.
+    Bullet Points: |
+      List the most important statements of the transcript as bullet points.
+
+      Format: one line per point, starting with "- ", the most important first,
+      at most 20 points.
+
+      Rules:
+      - Every point stands on its own and is concrete — with the names, numbers
+        and results ("the price rises to €12", not "prices are discussed").
+      - No repetitions, no topic headings without content.
+      - Only what is said in the transcript — no outside knowledge, no guesses.
+      - Write in the language of the transcript.
+    Meeting Minutes: |
+      Write minutes of the conversation.
+
+      Format — leave out any section there is nothing for:
+      ## Participants
+      ## Topics
+      ## Decisions
+      ## Open questions
+      ## Tasks
+      One line per task: who · what · by when (as far as it was said).
+
+      Rules:
+      - Record results and decisions, not the course of the conversation.
+      - Participants: the names used in the conversation; where there are none,
+        the speaker labels.
+      - Mark anything left unresolved as "(open)" instead of interpreting it.
+      - Only what is said in the transcript — no outside knowledge, no guesses.
+      - Write in the language of the transcript.
+    Chapter Marks: |
+      Divide the transcript into chapters, like the chapter list under a video.
+
+      Format: one line per chapter — the timestamp, then a title:
+      [0:00:00] Title
+
+      Rules:
+      - The first chapter starts at [0:00:00]; every further one at the
+        timestamp of the line where its topic begins, copied exactly — never
+        estimated or rounded.
+      - A new chapter only where the topic really changes, not with every
+        sentence.
+      - Titles of at most six words that name the content concretely.
+      - If the transcript has no timestamps, say so in one sentence and list the
+        topics instead.
+      - Write in the language of the transcript.
+    Timeline: |
+      Write a chronological timeline of what happens in the transcript.
+
+      Format: one entry per line — the timestamp in bold, then what happens:
+      **[0:12:34]** — what happens
+
+      Rules:
+      - Only moments that move things forward; group related lines into one
+        entry.
+      - Copy each timestamp exactly from the transcript line — never estimate.
+      - If the transcript has no timestamps, say so in one sentence and keep the
+        order without times.
+      - Only what is said in the transcript — no outside knowledge, no guesses.
+      - Write in the language of the transcript.
+    "Facts & Figures": |
+      Collect every checkable fact in the transcript: numbers, amounts, dates,
+      names, places, products, companies, measurements.
+
+      Format: one line per fact:
+      - **Fact** — the context in which it was mentioned
+
+      Rules:
+      - Only what was literally said — don't convert, round or complete
+        anything.
+      - Mark uncertain or contradictory statements with "(uncertain)".
+      - If there are no such facts, say so in one sentence.
+      - Write in the language of the transcript.
+    Speaker Analysis: |
+      Describe each speaker in the transcript.
+
+      Format — per speaker, their name or speaker label as a heading (## …):
+      - **Role and stance** — one sentence
+      - **Main topics and key statements**
+      - **Notable** — turning points, contradictions, open questions
+
+      Rules:
+      - Base every statement on specific passages; don't characterize anyone
+        beyond what they say.
+      - If the transcript has no speaker labels, say so and describe the voices
+        only as far as the content allows.
+      - If a speaker label seems to mix up two people, point it out.
+      - Write in the language of the transcript.
+    "Questions & Answers": |
+      Extract the questions asked in the transcript, each with its answer.
+
+      Format:
+      **Q:** the question, shortened to its core
+      **A:** the answer
+
+      Rules:
+      - Keep unanswered questions, with "**A:** (open)".
+      - Leave out rhetorical questions and back-channel ones like "What?".
+      - In the order of the transcript.
+      - Only what is said in the transcript — no outside knowledge, no guesses.
+      - Write in the language of the transcript.
+    Highlights: |
+      Pick the most memorable moments of the transcript — funny, surprising,
+      emotional or decisive ones.
+
+      Format per moment:
+      ### [0:12:34] Short title
+      **Who:** the people involved
+      **What happens:** one or two sentences
+      **Quote:** "the line that carries the moment", verbatim
+
+      Rules:
+      - At most 10 moments, in chronological order — quality over quantity.
+      - Copy each timestamp exactly from the line where the moment begins.
+      - Quotes verbatim from the transcript, never paraphrased or invented.
+      - Leave out routine passages; if nothing stands out, say so.
+      - Write in the language of the transcript.
+
+# ── Local llama.cpp server ──────────────────────────────────────────────
+# Only relevant if the setup installed llama.cpp as well (./setup.sh --llama).
+# start-llm.sh reads these values at every start; the health
+# check compares them with the running server.
+#
+# The default values suit the model the setup downloads, Qwen3.5-9B at
+# Q4_K_M (5.7 GB): with its 32k-token cache and buffers it takes ~7 GB of
+# VRAM, so an 8 GB card holds it whole. n_gpu_layers is left empty:
+# llama.cpp then puts as many layers on the card as its free memory takes,
+# and on a smaller card the rest runs on the CPU (slower, but it starts).
+# With other hardware or another model they are a starting point, not an
+# optimum; the health check reports what doesn't fit.
+llama:
+  host: "127.0.0.1"
+  port: 8080
+
+  # The bundled llama-servers (chat, embeddings, reranking) require a key.
+  # The app makes a random one at the first start — llama_api_key in the
+  # config folder, readable only by you — and sends it itself. Another
+  # program that talks to these servers sends the same key
+  # ("Authorization: Bearer <key>"); replace the file's line to change it.
+  # false: the servers start without a key, open to every local program.
+  require_key: true
+
+  # Threads. Do NOT set to $(nproc) if the cores are oversubscribed
+  # (VM with more vCPUs than physical cores): measured, response speed
+  # then drops by a factor of 6.6 (8 threads on 6 cores:
+  # 33.6 → 5.1 t/s), because llama.cpp synchronizes via spin-wait
+  # barriers. 0 = automatic: physical cores (at most 8), one fewer in a VM.
+  threads: 0
+
+  # Context window. The default model is a hybrid: only every fourth layer
+  # is classic attention with a KV cache (the others keep a small fixed
+  # state), so a token costs 32 KB — 1 GB at 32k; the model reads up to
+  # 262k. A classic dense model takes more (Qwen2.5-7B: 56 KB a token).
+  ctx_size: 32768
+
+  # Batch sizes: llama.cpp's own. A larger ubatch reads long prompts
+  # faster while layers run on the CPU — their weights cross the PCIe bus
+  # once per ubatch pass (measured with a mixture of experts on a 6 GB
+  # card: 2048 → 8192 +37% prompt speed) — but its buffers take VRAM, and
+  # the server stops at the start when they don't fit.
+  batch_size: 2048
+  ubatch_size: 512
+
+  # Mixture-of-experts models only (e.g. Qwen3.5-35B-A3B): how many layers
+  # keep their experts on the CPU. On a small card almost the whole stack:
+  # each layer on the GPU costs ~450 MB VRAM and brought only ~2.5%
+  # (measured on 6 GB). 0 = off; a dense model ignores it.
+  n_cpu_moe: 0
+  # Layers on the GPU. Empty ("") = llama.cpp fits them to the free VRAM by
+  # itself (newer builds); 0 = the CPU only. A number is taken as it is —
+  # the server then stops when they don't fit (with a mixture of experts:
+  # 99, and n_cpu_moe decides what stays on the CPU).
+  n_gpu_layers: ""
+
+  # Flash attention (false = off) and KV cache type. q8_0 halves the cache
+  # (32k: 1 GB → 0.5 GB) at a small cost in quality — f16 stays while it
+  # fits.
+  flash_attn: true
+  cache_type_k: "f16"
+  cache_type_v: "f16"
+
+  # One slot: multiple parallel slots share the context and each cost
+  # their own KV memory. The LLM queue works sequentially anyway.
+  parallel: 1
+  # Model file (empty = the first chat model in models/gguf/ — embedding,
+  # reranker and vision projector files are skipped; a relative path is
+  # relative to the project folder)
+  model: ""
+  # false = suppress reasoning blocks (faster, unnecessary for these tasks);
+  # true = the server's own choice (llama.cpp: from the chat template)
+  reasoning: false
+  # Additional arguments, passed through verbatim to llama-server
+  extra_args: ""
+
+# ── Embedding model (for RAG / semantic search) ───────────────────────
+# Configurable separately from the chat LLM — the embedding model often
+# runs on its own server/port (e.g. llama.cpp with --embedding).
+embedding:
+  # API endpoint of the embedding server:
+  #   llama.cpp:  http://localhost:8081/v1   (llama-server --embedding)
+  #   Ollama:     http://localhost:11434     (native, /api/embeddings)
+  #   OpenAI:     https://api.openai.com/v1
+  endpoint: ""
+  # API key (empty = no auth, e.g. for local llama.cpp/Ollama)
+  api_key: ""
+  # Embedding model (e.g. nomic-embed-text, bge-m3, text-embedding-3-small)
+  model: ""
+  # Timeout per embedding request (seconds)
+  timeout: 120
+
+  # ── How a QUESTION gets embedded ────────────────────────────────────
+  # Modern embedding models are trained for ASYMMETRIC retrieval: the
+  # question gets an instruction prefix, the text passage stays raw.
+  # Embedding both the same way treats a question like a text passage.
+  #
+  # Measured with Qwen3-Embedding-4B on 8 questions: the top hit changed
+  # for 6 of them, and the gap between the best and the fifth hit grew
+  # 1.28×. Vague topic questions gain most: without the prefix a filler
+  # passage ("Yes. Yes.") came first, with it a passage about the topic.
+  #
+  # `{question}` is replaced by the search query. EMPTY = no prefix.
+  #
+  # The template depends on the MODEL, not on taste:
+  #   Qwen3-Embedding   Instruct: <task>\nQuery:{question}
+  #   nomic-embed-text  search_query: {question}
+  #                     (it also wants "search_document: " before passages,
+  #                     which the index does not add)
+  #   bge-m3            nothing at all — leave empty
+  #
+  # It does NOT change the stored vectors; switching it needs no
+  # re-embedding.
+  question_template: "Instruct: Given a search query, retrieve relevant passages from spoken conversation transcripts\nQuery:{question}"
+
+  # ── Local llama.cpp server on demand ─────────────────────────────────
+  # Instead of a permanently running service, Whisper Transcription Manager starts the
+  # embedding server itself on first need and shuts it down again once
+  # nothing has been embedded for a while: the model occupies VRAM on the
+  # card Whisper and pyannote work on, and most of the time it has nothing
+  # to do.
+  #
+  # With `local: true`, `endpoint` is ignored; `local_port` counts instead.
+  local: false
+  # GGUF file. Relative = from the project root. NO fallback to "first file
+  # in models/gguf" — the chat model lives there, and starting that as an
+  # embedder delivers vectors that look like embeddings but aren't. The
+  # default comes from huggingface.co/Qwen/Qwen3-Embedding-4B-GGUF
+  # (Qwen3-Embedding-4B-Q8_0.gguf, 4.3 GB) — download it into models/gguf/.
+  local_model: "models/gguf/Qwen3-Embedding-4B-Q8_0.gguf"
+  local_host: "127.0.0.1"
+  # 8081, because 8080 is the chat server (llama.port).
+  local_port: 8081
+  # After this many seconds without an embedding, the server is stopped
+  # and frees the VRAM. 0 = never stop automatically.
+  local_idle_stop_sec: 300
+  # How long to wait for "model loaded" before aborting (seconds to
+  # minutes for a 4 GB model).
+  local_start_timeout_sec: 180
+  # Batch/ubatch and context. For embeddings these MUST hold the longest
+  # input: the models are non-causal and need the whole sequence in ONE
+  # pass; if it doesn't fit, llama.cpp rejects the request ("Context size
+  # has been exceeded") instead of splitting it. Chunks stay under
+  # rag.chunk_max_chars, but a single long segment (a repetition loop of
+  # Whisper's) can exceed it; 2048 tokens leave room for that, and a chunk
+  # that still doesn't fit is embedded from its beginning.
+  #
+  # Measured with Qwen3-Embedding-4B-Q8_0 on a 12 GB card, chunks of
+  # ~900 characters:
+  #
+  #   Setting                    VRAM      Chunks/s   100,000 chunks
+  #   ubatch 1024, 1 slot           —         —       fails on long chunks
+  #   ubatch 2048, 1 slot      5,872 MB     20.4         1.4 h   ← default
+  #   ubatch 4096, 1 slot      7,388 MB     20.3         1.4 h
+  #   ubatch 2048, 4 slots     6,738 MB     20.4         1.4 h
+  #   ubatch 2048, +FlashAttn  5,872 MB     20.2         1.4 h
+  #
+  # Anything above 2048 only costs VRAM. More slots bring nothing, because
+  # the indexer sends one batch after another; flash attention doesn't
+  # help non-causal models.
+  local_batch: 2048
+  local_ctx: 2048
+
+  # Does a SEARCH start the server on the CPU? An index run is not
+  # affected and uses the card.
+  #
+  # A question is ~30 tokens, ~22 of them the instruction prefix llama.cpp
+  # keeps cached, so embedding it on the CPU takes ~0.1–0.2 s — while
+  # a passage of ~400 tokens takes seconds, which is why indexing on the
+  # CPU is ~90× slower than on the card. The CPU path hides the card
+  # completely (CUDA_VISIBLE_DEVICES=""): a search never takes VRAM from a
+  # running job — on the card the server takes ~6 GB, enough to push a
+  # transcription into CUDA out-of-memory.
+  #
+  # If the server is already running — say, on the card for an indexing
+  # run — a search uses it as it is.
+  local_search_on_cpu: true
+
+  # Layers on the GPU:
+  #   -1  llama.cpp decides from the FREE VRAM  ← default
+  #    0  CPU only
+  #   >0  exactly this many layers
+  #
+  # Only -1 survives a busy card: with a fixed number llama.cpp turns its
+  # own fitting off and aborts ("cudaMalloc failed: out of memory") as soon
+  # as Whisper or pyannote hold the card — the normal case on a shared one.
+  # local_vram_reserve_mb below applies only with -1.
+  local_gpu_layers: -1
+
+  # VRAM left to the transcription, in MB. With local_gpu_layers -1 the
+  # server starts on the CPU when the queue is transcribing or less than
+  # this is free; it moves off the card when the queue starts, and back on
+  # for an index run once the queue is idle and this much is free again.
+  # Without it, llama.cpp fills whatever is free between two steps of a
+  # job — and the vocal separation, seconds later, fails for lack of
+  # memory. 0 = no reserve (a running transcription still keeps it off the
+  # card).
+  local_vram_reserve_mb: 3000
+  # Pooling. Empty = use whatever is declared in the model (for
+  # Qwen3-Embedding that is last-token pooling and thus correct). Only set
+  # this if a third-party model declares it incorrectly: none, mean, cls,
+  # last, rank
+  local_pooling: ""
+  # Additional arguments, passed through verbatim to llama-server
+  # (config file only, like the llama section).
+  local_extra_args: ""
+
+# ── RAG / semantic search ─────────────────────────────────────────────────
+# Builds a vector store from the transcript segments for semantic and
+# hybrid search. It is a single SQLite file next to the main database; the
+# embedding model comes from the [embedding] section. The main database
+# stays the source of truth — the vector store can be deleted and rebuilt
+# at any time.
+rag:
+  # Show the embedding coverage (how much of the library is in the vector
+  # store) in the file list and the statistics. Search and indexing work
+  # either way.
+  enabled: false
+  # Where the vector store lives. Empty = rag.db next to the main database.
+  # Relative = from the config file's folder; ~ and ${VAR} work.
+  path: ""
+
+  # ── Chunking (segments → chunks) ───────────────────────────────────────
+  # Target chunk size in characters. ~1000-1500 is a good compromise
+  # between semantic coherence and retrieval granularity.
+  chunk_max_chars: 1200
+  # With chunk_on_speaker_change: a speaker change closes a chunk only once
+  # it has this many characters (no effect otherwise)
+  chunk_min_chars: 250
+  # Overlap between consecutive chunks (number of segments)
+  chunk_overlap_segments: 1
+  # Treat speaker changes as preferred chunk boundaries
+  chunk_on_speaker_change: false
+  # Include speaker label in the chunk text field (improves context)
+  include_speaker_labels: true
+
+  # ── Vectors ─────────────────────────────────────────────────────────────
+  # Embedding dimension. MUST match the embedding model's output.
+  #   nomic-embed-text = 768, bge-m3 = 1024, text-embedding-3-small = 1536
+  # 0 = determine automatically on first build from a test embedding.
+  dimensions: 0
+  # No vector index: a plain matrix product over the whole store is faster
+  # than an approximate index would be at this size (see rag/vector_db.py).
+
+  # ── Full text ───────────────────────────────────────────────────────────
+  # Stored with the index as a note: the full-text part uses the same
+  # tokenizer (unicode61, no stemming) whatever the value.
+  fts_language: "english"
+
+  # ── Hybrid search (Reciprocal Rank Fusion) ──────────────────────────────
+  # RRF constant k (default 60). Higher = flatter weighting of ranks.
+  rrf_k: 60
+  # Default number of results
+  top_k: 20
+
+  # ── Indexer ────────────────────────────────────────────────────────────
+  # Chunks per embedding request (batch). Larger values = fewer requests,
+  # but higher memory requirement in the embedding server.
+  batch_size: 64
+
+# ── Reranker (situation search) ───────────────────────────────────────────
+# A reranker reads the question and a passage TOGETHER and judges the pair —
+# a vector search only compares two vectors made apart from each other.
+# Measured on the index of a large real library against careful gold
+# labels, precision of the best 10 / 50 hits:
+#
+#   vector search alone                                    0.40 / 0.56
+#   Qwen3-Reranker-0.6B                                   ≤0.60 / ≤0.64
+#   Qwen3-Reranker-4B with its own instruction            1.00 / 0.82
+#   Qwen3-Reranker-4B, instruction + criteria             1.00 / 0.90
+#
+# The meaning search ranks its best candidates with it, the deep search
+# ("Find everything") all of them before a language model checks each
+# passage. Without the reranker (switched off, no GPU, the GPU busy) both
+# keep the fused order and say so.
+#
+# GPU ONLY: ≈10 passages a second on a 12 GB card in ≈4.5 GB of VRAM, on the
+# CPU 3–4 a MINUTE. The server starts on first use, holds a stage of the GPU
+# gate while it runs (the queue's Whisper never runs next to it), gives the
+# card back when the queue waits for it, and stops after the idle time.
+#
+# The model's GGUF bakes a web-search instruction into its rerank template.
+# On first use a copy whose template takes the instruction from each request
+# is written next to the model (models/gguf/derived/; under the data folder
+# when that isn't writable) and made again when the model file changes. On
+# btrfs or XFS the copy shares the model's weights (a reflink, no extra
+# space); elsewhere it is a full copy, the same size as the model.
+rerank:
+  # false = never start it; the searches keep their fused order.
+  enabled: true
+  # GGUF file. Relative = from the project root. The 0.6B
+  # (models/gguf/qwen3-reranker-0.6b-q8_0.gguf) also runs, but is too weak for
+  # situations described in colloquial speech.
+  local_model: "models/gguf/Qwen3-Reranker-4B-Q4_K_M.gguf"
+  host: "127.0.0.1"
+  # 8080 is the chat server (llama.port), 8081 the embedding server.
+  port: 8082
+  # Context for all slots together (8192 / 4 slots = 2048 tokens each: a
+  # passage of 2,000 characters with the instruction fits), parallel slots,
+  # and the batch, which must hold the longest passage in one pass.
+  ctx: 8192
+  parallel: 4
+  batch: 2048
+  # Stopped after this many seconds without a request (0 = never).
+  idle_stop_sec: 300
+  # What it needs free on the card before it starts (≈4.5 GB measured).
+  vram_need_mb: 4800
+  # How long to wait for "model loaded".
+  start_timeout_sec: 120
+  # More llama-server arguments, e.g. "--flash-attn on".
+  extra_args: ""
+  # What the meaning search asks it to judge (English, as Qwen recommends).
+  instruction: "Judge whether this excerpt of a spoken conversation transcript shows the situation described in the query actually happening (merely mentioning the name or the topic is not enough)."
+
+  # ── Meaning search ─────────────────────────────────────────────────────
+  # How many of the best candidate groups (copies collapsed) it reranks:
+  # ≈12 s at 10 passages a second.
+  quick_candidates: 120
+  # Below this relevance a hit is shown only on request ("show weaker
+  # matches") — 0.05 keeps 85–97 % of the right passages.
+  quick_min_score: 0.05
+
+  # ── Deep search ("Find everything") ────────────────────────────────────
+  # The right passages lie spread down the vector ranking: its best 100 hold
+  # 24–33 % of them, its best 1,000 76–89 %, its best 3,000 89–97 %.
+  deep_dense: 2000
+  # Only groups at this relevance or above go to the language model's check
+  # (all of them when the reranker is not available).
+  deep_prefilter: 0.05
+  # At most this many checks (≈2.3 s each on a llama.cpp server).
+  deep_max_verify: 1500
+
+# ── Images & sounds (media search) ────────────────────────────────────────
+# Finds moments by what is SEEN or HEARD: stills, short clips, sounds and
+# spoken text of the recordings lie in one vector space (EmbeddingGemma 2,
+# Google, 10/2026), so a text, a hit ("Similar") or a file of your own asks
+# all of them. The search view's tab "Images & sounds"; the index is built
+# here (Settings → Images & sounds).
+#
+# Not the semantic search (rag): that one reads the TRANSCRIPTS — passages
+# of about a minute with speaker names, a large text model — and finds what
+# was SAID, with its context, for the search's meaning hits, Ask and AI
+# clients. This one reads the RECORDINGS — a moment every 20 s — and finds
+# what is seen or heard, also where nobody talks.
+#
+# Measured on a mixed video library (a 12 GB card, the queue running):
+#   - pictures: scenes, objects and screens described in a few words come
+#     out nearly all right; queries in other languages as good as English;
+#   - sounds: distinctive ones land at the very top; when people talk, a
+#     sound window is mostly about WHAT is said;
+#   - stills 13/s, 4-frame clips 5.5/s, sounds 36/s on the GPU.
+#
+# The model runs in an environment of its own (it needs transformers 5.19,
+# newer than the app's) — installed from the settings page, ~1 GB of disk
+# with uv (packages linked from its cache) plus the model (1.5 GB).
+media_search:
+  # false = the tab says it is off; nothing is indexed, no process starts.
+  enabled: true
+  # Hugging Face id or a local folder.
+  model: "google/embeddinggemma-2"
+  # Its Python environment. Empty = <data folder>/media-env.
+  environment: ""
+  # The index. Empty = media.db next to the main database.
+  path: ""
+  # Thumbnails and preview clips. Empty = media/ in the cache folder
+  # (~/.cache/whisper-tm).
+  # (Relative paths here are from the config file's folder; ~ and ${VAR}
+  # work.)
+  cache_dir: ""
+  # Preview clips are cut when played and kept up to this (the oldest go).
+  cache_max_mb: 2000
+  # Thumbnails (~22 KB a still at 480 px) are written while an index run
+  # keeps them under this; beyond it a still is cut from the recording when
+  # it is first shown. 0 = no limit.
+  thumbs_max_mb: 4000
+  thumb_width: 480
+
+  # ── What is indexed ────────────────────────────────────────────────────
+  # image = a still per moment · video = a clip around it · videoaudio = the
+  # clip with its sound, one vector (with 4 frames cosine 0.92 to the clip
+  # alone — its own kind, at the cost of a second clip: the most expensive
+  # kind) · audio = the sound around it · speech = the words of those 10 s
+  # in the same space as the pictures and sounds: what is said where
+  # something is seen or heard, and a way from a picture or a sound to
+  # words ("Similar"). For what was said, with whole passages and context,
+  # the semantic search is the place (rag). Measured: weighing
+  # the sound list by the spoken words made it worse (mean AP 0.251 →
+  # 0.243) — the kinds stay lists of their own.
+  # A kind switched on later is added to the moments that are there; one
+  # switched off stays in the index until "Rebuild everything".
+  kinds: [image, video, videoaudio, audio, speech]
+  # A moment every N seconds of a video.
+  video_interval_sec: 20
+  # Sound window: around each video moment, and back to back in audio files.
+  sound_window_sec: 10
+  # A clip: this long, with clip_frames frames spread over it.
+  clip_sec: 10
+  # 0 = automatic: 8 frames while the videos in scope add up to ≤ 500 hours,
+  # 4 above — decided at the first run and kept. 4 frames: 5.5 clips/s,
+  # cosine 0.98 to 16 frames; 8: half the speed, 0.99; 2: 0.965.
+  clip_frames: 0
+  # A moment whose still looks like the last kept one (cosine ≥ this) is a
+  # repeat — a webcam stream over hours: no still and no clip of its own,
+  # its sound still counts. 1 = keep every moment.
+  dedupe_similarity: 0.97
+  # Numbers per vector (768, 512, 256, 128 — Matryoshka), stored as 8-bit
+  # numbers: 768 bytes a vector at 768. Measured on 16 labeled
+  # sound kinds: mean AP 0.251 at 768, 0.189 at 512, 0.201 at 256 — all of
+  # them is worth it. Changing it needs "Rebuild everything".
+  dims: 768
+  # Only recordings under these folders (empty = the whole library).
+  folders: []
+  # Index new transcriptions in scope by itself (looks every ten minutes).
+  auto_index: false
+
+  # ── Running ────────────────────────────────────────────────────────────
+  host: "127.0.0.1"
+  # 8080 chat (llama.port), 8081 embeddings, 8082 reranker.
+  port: 8083
+  # Index on the GPU ("cuda") or the CPU (slow, ~10× fewer moments an hour).
+  index_device: "cuda"
+  # true = share the card with the queue through the GPU gate: a turn of
+  # several chunks, given back when the queue waits. false = index only
+  # while no transcription runs.
+  index_while_queue_runs: true
+  # Free VRAM an index turn needs (it measured 1.6–2.1 GB).
+  vram_need_mb: 2500
+  # A turn keeps the card at least this long before it gives it back.
+  yield_after_sec: 20
+  # Pictures/clips per pass on the card, moments per request, decoding
+  # threads (ffmpeg, one thread each — single-frame seeks).
+  batch: 4
+  chunk_moments: 16
+  grab_workers: 4
+  # Recordings indexed at the same time. With one the card waits for the
+  # decoding of every chunk (busy ~35 % of the time on a 12 GB card);
+  # with more, other files' frames are decoded while one is on the card
+  # (2: ~63 %, 3: ~76 %, 4: no better). The model still runs one request
+  # at a time: no more VRAM, decoding threads × this many ffmpeg.
+  parallel_files: 3
+  # An index run waits while the disk of the index (or of its thumbnails)
+  # has less free than this — the queue needs room for long recordings
+  # (Diagnostics asks 20 GB of the work folder).
+  min_free_gb: 20
+  # CPU threads for queries (texts ~0.1 s, an image ~3.5 s, a video ~10 s).
+  cpu_threads: 8
+  # Stop the service after this many seconds without a request (it holds
+  # 1–3 GB of RAM); 0 = never.
+  idle_stop_sec: 600
+  start_timeout_sec: 180
+
+  # ── Search ─────────────────────────────────────────────────────────────
+  # Hits per kind. A search scores every vector with all its numbers: RAM
+  # keeps them as stored, 8-bit, packed for fbgemm (~0.8 KB a vector at 768
+  # — 26 ms for a million). A first pass on fewer numbers was measured and
+  # dropped: the true top 10 sat as deep as 2–3 % of the collection when
+  # ranked by the first 128 numbers.
+  results_per_kind: 48
+
+  # ── Language model (AI models; needs one that sees pictures) ───────────
+  # Ask the sounds with a short English label the language model writes — a
+  # query like "lots of people chatting in a crowded pub" → "busy pub
+  # crowd": mean AP 0.115 → 0.325 on 16 labeled sound kinds (~0.5 s).
+  llm_translate_sounds: true
+  # "Check with the language model": how many of the best pictures it
+  # judges, one per request (~3.8 s each). Measured on 12 queries: precision
+  # of the top 10 0.62 → 0.82, nDCG@10 0.67 → 0.96.
+  llm_check_count: 24
+  # Descriptions: the model writes one sentence per still (~5.4 s each, on
+  # the language model's machine), embedded as text — a kind of its own in
+  # the tab. Measured on 12 queries: top 10 by description 0.79 precision,
+  # nDCG@10 0.91 (by the picture 0.62, 0.67) — written once, good for every
+  # query after. A run goes through the LLM queue; at most this many a run.
+  llm_describe_limit: 1000
+  # Queue a describing run after every index run.
+  llm_describe_after_index: false
+  # Language of the descriptions.
+  llm_language: "English"
+  # Model for all of it ('' = the default model of AI models).
+  llm_model: ""
+
+# ── Audio analysis (same audio, duplicates, waveform, loudness) ──────────
+# Every recording's sound, analyzed once — while it is transcribed, or by a
+# background run for recordings transcribed before (Settings → Audio
+# analysis). It keeps:
+#   - fingerprints: pairs of spectral peaks (as Shazam does), ~10 a second
+#     of sound, 216 kB an hour. A snippet of a few seconds — chosen in the
+#     clip editor, or a sound or video file of your own — finds every
+#     recording that holds it, at the exact time: also re-encoded (mp3 at
+#     32 kbit/s), 20 dB quieter or under noise as loud as itself. Not found:
+#     copies played faster, slower or pitched. The search view's tab "Same
+#     audio".
+#   - duplicates: recordings that are the same, or that contain another one
+#     (a compilation, a longer cut), found while the second of them is
+#     analyzed — the tab's list "Duplicates".
+#   - the waveform (20 values a second, 72 kB an hour) for the clip editor,
+#     and loudness: integrated loudness and loudness range (EBU R128), peak,
+#     how much is near silence, how much is clipped.
+# Everything runs on the CPU; one hour of sound takes ~4 s of one core. The
+# background run is bounded by reading the recordings: a large library on a
+# network share is read once, which can take days — it goes on where it
+# stopped.
+audio_analysis:
+  # false = nothing is analyzed, the tab says it is off.
+  enabled: true
+  # Analyze while transcribing, from the 16 kHz sound the transcription
+  # decodes anyway (the recording isn't read again).
+  during_transcription: true
+  # The index. Empty = audio.db next to the main database (its
+  # fingerprints in the folder audio.db.fp beside it).
+  path: ""
+  # Only recordings under these folders (empty = the whole library).
+  folders: []
+  # Start the background run by itself: after a start, and every ten
+  # minutes when the library scan found new recordings.
+  auto_run: false
+  # Recordings read at the same time by the background run.
+  parallel_files: 2
+  # The background run reads at most this many MB a second in all (0 = no
+  # limit) — on a network share the queue's own reads compete with it.
+  max_read_mb_s: 0
+  # Wait while a transcription runs.
+  pause_for_queue: false
+  # Wait while the index's disk has less free than this.
+  min_free_gb: 5
+
+# ── Conversations ─────────────────────────────────────────────────────────
+# Statistics of how people talk in every transcript: speech time, words per
+# sentence, speaker changes, talk shares, questions, the longest monologue.
+# They are counted from the segments alone (no model) by every transcript
+# write, and let the Conversations tab, Ask, Find and MCP clients find
+# conversations by who took part and how they talked.
+conversations:
+  # false = nothing is counted, and the tab says it is off.
+  enabled: true
+  # Count transcripts without numbers in the background: a minute after a
+  # start, and every half hour (a large library takes minutes of one CPU
+  # core; transcripts written since are counted by their own write).
+  auto_run: true
+  # A person takes part in a conversation when they speak at least this
+  # share of it (0.05 = 5 %) — less is a remark, not a part.
+  min_share: 0.05
+
+# ── Logging ───────────────────────────────────────────────────────────────
+logging:
+  # ── Debug mode ─────────────────────────────────────────────────────────
+  # true = maximum output: everything is logged AND everything is timed
+  #        (HTTP requests, ffmpeg/ffprobe/audio-separator, DB transactions,
+  #        queue entries, pipeline steps). On shutdown the server prints an
+  #        overview of where the time went.
+  # Also toggleable via:  --debug  or  WHISPER_TM_DEBUG=1
+  debug: false
+
+  # Folder for the logs. One file per server start:
+  #   whisper_tm_<date>_<time>.log
+  # Written even without debug mode (as long as persist: true) — then only
+  # at the level from `level`. The servers the app starts (llama.cpp, the
+  # media service) log here too. Relative = in the data folder
+  # (~/.local/share/whisper-tm). --log-dir overrides it.
+  debug_dir: "logs-debug"
+  # How many runs to keep (older log files are deleted)
+  keep_runs: 20
+
+  # Log EVERY SQL statement. Very noisy, but shows exactly what the DB is
+  # doing. The statements are logged at DEBUG level: in the config file it
+  # needs debug: true (or level DEBUG); --trace-sql switches debug mode on
+  # by itself.
+  trace_sql: false
+
+  # ── Split by topic ──────────────────────────────────────────────────
+  # In debug mode, scanner, database, HTTP and pipeline write all over
+  # each other — a single log then becomes barely readable. With `split`
+  # a FOLDER is created per run:
+  #   logs-debug/whisper_tm_<date>_<time>/
+  #     main.log      everything
+  #     db.log        database + SQL
+  #     queue.log     queue and jobs
+  #     pipeline.log  transcription, vocal isolation, export, whisperx/pyannote
+  #     scanner.log   scan and index
+  #     api.log       API endpoints
+  #     rag.log       RAG / vector store
+  #     http.log      every HTTP request with duration
+  #     trace.log     function calls (see trace_calls)
+  # main.log contains everything except the call trace — that is fully in
+  # trace.log and would otherwise double the folder's size. The other files
+  # are additional views.
+  split: true
+
+  # ── Log every function call ─────────────────────────────────────────────
+  # Logs EVERY entry and exit of a function in whisper_tm,
+  # with arguments, duration and return value, nested and indented.
+  # In the config file it needs debug: true as well; --trace-calls
+  # switches debug mode on by itself.
+  #
+  # WARNING: this hooks into the interpreter and fires on EVERY call.
+  # Expect about half speed, noticeably less at call-intensive spots
+  # (a scan over a large library). Meant for tracing a specific flow, not for
+  # continuous operation.
+  trace_calls: false
+  # Also record arguments and return values (truncated). false = only the
+  # call chain, which is noticeably faster and leaner.
+  trace_call_args: true
+  # Emergency brake on the SIZE of trace.log. This is the number that
+  # matters when it comes to whether the disk fills up. 0 = no limit.
+  # The check only runs every 50,000 events — a stat() per function call
+  # would be more expensive than the write itself.
+  trace_calls_max_mb: 8000
+  # Additional limit on the number of events. Off by default: startup and
+  # a scan alone produce millions, before a transcription even begins.
+  # 0 = no limit.
+  trace_calls_max: 0
+  # Files/path parts that are NOT traced. Useful against the noisiest
+  # spots, e.g. ["scanner/filesystem.py"] when debugging the pipeline.
+  trace_calls_exclude: []
+
+  # Log level: DEBUG, INFO, WARNING, ERROR (overridden by debug: true)
+  level: "INFO"
+  # Persist logs
+  persist: true
+
+# ── Speaker re-identification ─────────────────────────────────────────────
+# The thresholds are MEASUREMENT RESULTS, not natural constants — and the
+# material plays a role too. Each one carries its evidence below. (The two
+# single-voice values, 0.55 across files and 0.62 within one recording, are
+# documented in core/speaker.py; no feature compares with them, so they are
+# not settings.)
+speaker:
+  # Cut in the grouping run over the whole dataset — the threshold of the
+  # SPEAKER MAP. Higher = stricter.
+  #
+  # 0.94 suits libraries with many long multi-speaker recordings: there,
+  # average linkage chains voices together, and at lower cuts a large part
+  # of them ends up in a SINGLE tile. A library of voice messages
+  # separates around 0.55–0.75 instead: at 0.55 the closest pairs of
+  # people merge, at 0.75 one speaker falls apart into many groups.
+  threshold_grouping: 0.94
+
+  # ── Guided assignment ─────────────────────────────────────────────────
+  #
+  # NOTE, these are DIFFERENT values from `threshold_grouping` above. The
+  # slider in the speaker map decides how the MAP is grouped — it belongs
+  # to the view. The assignment path computes on speaker centroids with
+  # complete-linkage clustering and therefore has its own two values
+  # (method and measurements: core/speaker_assignment.py).
+  #
+  # Cut of the complete linkage. At 0.71 the clusters were 99.8 % pure
+  # against manual assignments. Higher fragments, lower barely collects
+  # more.
+  assignment_cut: 0.71
+  # From here on, an assigned name spreads to similar centroids.
+  # Measured: with 25% known nodes, 0.65 covers 94%, of which 100% correct.
+  # 0.60 covers 95%, but only ~97% correct. Anyone who prefers to decide
+  # themselves sets it higher — meaning more clicks.
+  assignment_spread: 0.65
+  # A recording against ALL named people. Must be the highest: with a
+  # dozen or more people and many windows per recording there are hundreds
+  # of chances to cross the threshold by accident. Measured: at 0.55
+  # almost half of the recordings got at least one wrong name, at 0.75
+  # under 1 % — with 96 % of the right names still found. More named
+  # people need a higher value.
+  threshold_gallery: 0.75
+
+  # ── Sentence check ────────────────────────────────────────────────────
+  #
+  # After diarization each sentence is measured on its own against the
+  # voices of the same recording, and moves to another voice when that one
+  # is clearly it. Diarization can keep two people trading short sentences
+  # under one label; this catches it. Names play no part, so it works
+  # before anyone is named. Runs on transcriptions and voices-only runs
+  # with vocal isolation (raw sentences don't compare with separated
+  # voices); costs well under a second per minute of speech.
+  check_sentences: true
+  # Shorter sentences are left alone — below a second the vector is noise.
+  check_min_sec: 1.0
+  # How similar a sentence must be to the voice it moves to.
+  check_min_sim: 0.6
+  # How far that voice must lead the sentence's own label. The diarization
+  # heard the sentence in context, the check hears it alone — close calls
+  # stay with the diarization.
+  check_margin: 0.1

@@ -1,0 +1,9 @@
+# Only the workflow actions. Python packages stay where they are pinned on
+# purpose (torch, audio-separator and the voice model belong together, and a
+# bump needs a run on a GPU that CI doesn't have).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

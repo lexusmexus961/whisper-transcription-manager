@@ -1,0 +1,42 @@
+# Whisper Transcription Manager — CPU-only dependencies
+# Install with: pip install -r requirements-cpu.txt
+
+-c constraints.txt
+
+# Core
+flask>=3.0
+pyyaml>=6.0
+platformdirs>=4.0
+psutil>=5.9
+requests>=2.28
+
+# PyTorch (CPU)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+torchaudio
+
+# Transcription
+whisperx
+
+# Compiled, parallel voice grouping (core/speaker_linkage.py) — whisperx
+# brings it along via librosa; named here because the assignment needs it
+# (without it, a fallback needs memory ~ centroids², tens of GB)
+numba
+
+# Vocal isolation
+audio-separator[cpu]
+# imported by audio-separator without being declared (librosa 1.0 dropped it)
+audioread
+
+# YouTube/video download (optional)
+# yt-dlp: on "403 Forbidden" or "Requested format is not available"
+# the STABLE release is almost always too old — YouTube changes its
+# delivery more often than releases come out. Then:
+#   uv pip install --python ./.venv/bin/python --pre --upgrade yt-dlp
+# (a stable release only weeks old can fail where the current nightly
+#  build loads the same file in seconds)
+yt-dlp
+
+# MCP server for hooking up a local AI (optional —
+# only needed for `python -m whisper_tm.mcp_server`)
+# fastmcp>=2.0

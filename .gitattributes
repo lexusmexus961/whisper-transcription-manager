@@ -1,0 +1,14 @@
+# Text is stored and checked out with LF everywhere. The app runs on Linux,
+# in Docker or under WSL2, and a script checked out with CRLF on Windows
+# breaks inside the container ("/bin/sh^M: bad interpreter").
+* text=auto eol=lf
+
+*.png  binary
+*.mp3  binary
+
+# Third-party code, kept as released (licenses next to it)
+whisper_tm/static/vendor/** linguist-vendored
+whisper_tm/vendor/** linguist-vendored
+
+# The tested environment, frozen (uv pip freeze; make setup-locked installs it)
+requirements-lock-nvidia.txt linguist-generated

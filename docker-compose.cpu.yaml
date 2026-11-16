@@ -1,0 +1,9 @@
+# Whisper Transcription Manager on a machine without an NVIDIA GPU: drops the GPU request of
+# docker-compose.yaml, so the server transcribes on the CPU — much slower
+# than on a GPU. Enable it in .env:
+#
+#   COMPOSE_FILE=docker-compose.yaml:docker-compose.cpu.yaml
+
+services:
+  whisper-tm:
+    deploy: !reset {}

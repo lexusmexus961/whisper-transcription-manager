@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Whisper Transcription Manager</title>
+<link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+<header>
+    <img src="icons/icon32.png" alt="" width="20" height="20">
+    <span class="name">Whisper Transcription Manager</span>
+    <span class="dot" id="dot" title="Server"></span>
+    <span class="gap"></span>
+    <button class="icon" id="btnSettings" title="The server, ask before sending, the defaults">⚙</button>
+</header>
+
+<!-- ⚙: the server, "ask before sending", the defaults -->
+<section class="settings" id="settings" hidden>
+    <div class="sec">Server</div>
+    <div class="row">
+        <input id="server" type="url" placeholder="http://localhost:9860" spellcheck="false">
+        <button class="b" id="btnSave">Save</button>
+    </div>
+    <div class="row">
+        <input id="token" type="password" autocomplete="off" spellcheck="false"
+               placeholder="Access token — only with the login on">
+        <button class="b" id="btnForgetToken" hidden title="Remove the saved access token">Forget</button>
+    </div>
+    <div class="note" id="serverNote"></div>
+    <label class="check"><input type="checkbox" id="askFirst">
+        <span><b>Ask before sending</b> — Summarize and Transcribe open the form first, here and on the page.</span></label>
+    <label class="check"><input type="checkbox" id="marksEverywhere">
+        <span><b>Library marks on other sites</b> — show which YouTube videos linked on any page are in your library. Sends those links to your server; on YouTube itself they are always shown.</span></label>
+    <div class="sec">Defaults for videos from the browser</div>
+    <div class="note">What Summarize and Transcribe use. “As in Whisper Transcription Manager” = its own setting.</div>
+    <div id="defaultsForm"></div>
+    <div class="acts"><button class="b p" id="btnDefaults">Save the defaults</button>
+        <span class="note" id="defaultsNote"></span></div>
+</section>
+
+<!-- The video: the tab's, or one picked from the lists -->
+<section class="videobox">
+    <div class="video" id="video" hidden>
+        <img id="thumb" alt="">
+        <div class="vtext">
+            <div class="vtitle" id="vtitle"></div>
+            <div class="vstate" id="vstate"></div>
+        </div>
+    </div>
+    <div class="note" id="noVideo">Open a YouTube video — its summary, its transcript and your questions show here.</div>
+    <div class="acts" id="vacts" hidden>
+        <button class="b p" data-send="summarize">⚡ Summarize</button>
+        <button class="b" data-send="transcribe">📝 Transcribe</button>
+        <button class="b" id="btnForm" title="Choose the template, the language, the model …">Options…</button>
+    </div>
+    <div class="bar" id="progress" hidden><div></div></div>
+    <div class="err" id="err" hidden></div>
+    <div class="form" id="form" hidden></div>
+</section>
+
+<!-- What is selected on the page — from any tab, as it changes -->
+<section class="selbox" id="selBox" hidden>
+    <div class="row-l"><b id="selTitle"></b><span class="gap"></span>
+        <button class="l" id="btnNone" title="Untick every video of this page">clear selection</button></div>
+    <div class="videos" id="selList"></div>
+    <div class="acts" id="acts">
+        <button class="b p" data-mode="summarize">Summarize</button>
+        <button class="b" data-mode="transcribe">Transcribe</button>
+        <button class="b" id="btnOptions">Options…</button>
+        <button class="b" id="btnAnalyze" title="One task over all of them together — compare them, summarize them together, find …">Analyze…</button>
+    </div>
+    <div id="analyzeBox" hidden>
+        <textarea id="task" placeholder="e.g. Summarize them together — what they agree on, where they differ."></textarea>
+        <div class="acts"><button class="b p" id="btnStart">Start</button><button class="b" id="btnBack">Back</button></div>
+    </div>
+</section>
+
+<nav class="tabs" id="tabs">
+    <button data-tab="summary" class="on">Summary</button>
+    <button data-tab="ask">Ask</button>
+    <button data-tab="transcript">Transcript</button>
+    <button data-tab="page">Page <span class="count" id="pageCount"></span></button>
+    <button data-tab="sent">Sent</button>
+</nav>
+
+<main>
+    <section class="pane" id="pane-summary"></section>
+
+    <section class="pane ask" id="pane-ask" hidden>
+        <div class="chat" id="chat"></div>
+        <div class="composer">
+            <textarea id="question" rows="2" placeholder="Ask about this video …"></textarea>
+            <button class="b p" id="btnAsk">Ask</button>
+        </div>
+        <div class="row-l"><button class="l" id="btnNewChat">new conversation</button>
+            <span class="gap"></span><button class="l" id="btnChatApp">go on in Whisper Transcription Manager ↗</button></div>
+    </section>
+
+    <section class="pane" id="pane-transcript" hidden>
+        <input id="find" type="search" placeholder="Find in the transcript …">
+        <div class="note" id="findNote"></div>
+        <div class="segments" id="segments"></div>
+    </section>
+
+    <section class="pane" id="pane-page" hidden>
+        <input id="filter" type="search" placeholder="Filter by title …">
+        <div class="videos" id="videos"></div>
+        <div class="row-l"><button class="l" id="btnAll" hidden>select all videos on this page</button>
+            <span class="gap"></span><span class="note" id="selCount"></span></div>
+    </section>
+
+    <section class="pane" id="pane-sent" hidden>
+        <div class="row-l"><button class="l" id="btnClearDone" hidden title="Remove every finished batch from this list — the transcripts stay">clear finished</button>
+            <button class="l" id="btnClearAll" hidden>clear all</button>
+            <span class="gap"></span><button class="l" id="btnApp">open Whisper Transcription Manager ↗</button></div>
+        <div id="recent"></div>
+    </section>
+</main>
+<script src="ui.js"></script>
+<script src="sidepanel.js"></script>
+</body>
+</html>

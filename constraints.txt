@@ -1,0 +1,16 @@
+# Upper bounds shared by setup.sh, the requirements files and CI: a fresh
+# install gets what the app was tested with, not the next major version of
+# the libraries whose changes broke it before. yt-dlp stays free (YouTube
+# changes faster than releases). The exact tested set is
+# requirements-lock-nvidia.txt.
+whisperx>=3.8,<3.9
+pyannote-audio<5
+transformers<5
+audio-separator>=0.44,<0.45
+# librosa 1.0 no longer brings audioread, which audio-separator imports;
+# the app is tested on 0.11
+librosa<1
+# The MCP server is tested on fastmcp 3 / mcp 1; fastmcp 4 changed the
+# audio content's type
+fastmcp>=2,<4
+mcp<2

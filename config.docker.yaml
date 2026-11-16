@@ -1,0 +1,54 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  Whisper Transcription Manager — Docker configuration           ║
+# ║                                                                  ║
+# ║  Copy it to config/config.yaml next to docker-compose.yaml —    ║
+# ║  the folder is mounted writable at /config: the settings page   ║
+# ║  saves there, and the session key and MCP token are kept there. ║
+# ║  Paths are aligned with the Docker volumes.                     ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+server:
+  host: "0.0.0.0"
+  port: 9860
+
+# The API answers requests sent to an IP address (http://192.0.2.10:9860)
+# or to one of the container's own names — against DNS rebinding. Reached by
+# a name (the host's, a DNS name), list those origins here, as the browser
+# shows them:
+# security:
+#   trusted_origins: ["http://nas:9860"]
+
+directories:
+  media: "/media"
+  work: "/data/work"
+  uploads: "/data/uploads"
+  # The media are mounted read-only: transcripts go to one folder in the
+  # data volume (and the database), not next to the recordings
+  transcript_mode: "central"
+  transcripts: "/data/transcripts"
+  clips: "/data/clips"
+  logs: "/data/logs"
+
+database:
+  path: "/data/library.db"
+  fts_enabled: true
+  sync_on_start: true
+
+hardware:
+  device: "auto"
+  compute_type: "auto"
+
+transcription:
+  # HF_TOKEN is read from the environment variable. Its account must have
+  # accepted the conditions of pyannote/speaker-diarization-community-1
+  # (docs/GUIDE.md: Speaker diarization: the Hugging Face token).
+  hf_token: ""
+
+scanner:
+  watch_enabled: false
+  watch_interval_sec: 30
+
+# The server's own log and those of the servers it starts (llama.cpp, the
+# media service) — in the data volume too
+logging:
+  debug_dir: "/data/logs-debug"

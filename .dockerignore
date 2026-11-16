@@ -1,0 +1,14 @@
+# The build context is sent whole to the builder, so only what the image
+# needs goes in (Dockerfile) — never secrets, local state or downloads
+*
+!pyproject.toml
+!LICENSE
+!THIRD_PARTY_NOTICES.md
+!config.default.yaml
+!config.docker.yaml
+!docker-entrypoint.sh
+!requirements-lock-nvidia.txt
+!requirements-lock-overrides.txt
+!whisper_tm/
+**/__pycache__
+**/*.pyc

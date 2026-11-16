@@ -1,0 +1,78 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# venv
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Runtime
+*.db
+*.db-wal
+*.db-shm
+uploads/
+chunks/
+separated/
+clips/
+logs/
+
+# Config (user-specific, template tracked)
+config.yaml
+!config.default.yaml
+# Docker's configuration folder (docker-compose.yaml) — config.yaml, the
+# session key and the MCP token — its settings (.env, with the Hugging Face
+# token; .env.example is the template) and a local compose override
+/config/
+.env
+docker-compose.override.yaml
+# The media folder .env.example suggests
+/media/
+
+# Flask session key and the MCP access token (generated next to the
+# config, never check in)
+secret_key
+mcp_token
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Generated start scripts
+start.sh
+start-llm.sh
+
+# Debug logs (one file per server start)
+logs-debug/
+
+# Self-built llama.cpp and downloaded models (gigabytes) — models/ holds
+# the GGUF files and the reranker's copy that takes an instruction, written
+# on first use (core/rerank_server.py), as big as the model
+/llama.cpp/
+/llama.cpp-src/
+/models/
+# The Images & sounds service's Python environment, if put next to the app
+media-env/
+
+
+# venv symlink
+.venv

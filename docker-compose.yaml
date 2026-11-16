@@ -1,0 +1,74 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  Whisper Transcription Manager — Docker Compose (NVIDIA GPU)    ║
+# ║                                                                  ║
+# ║  cp .env.example .env     media folder, token, port — edit it   ║
+# ║  mkdir -p config          your configuration lands here         ║
+# ║  docker compose up -d --build                                    ║
+# ║                                                                  ║
+# ║  Logs:     docker compose logs -f                                ║
+# ║  Update:   git pull && docker compose build --pull && \          ║
+# ║            docker compose up -d                                  ║
+# ║  Stop:     docker compose down                                   ║
+# ╚══════════════════════════════════════════════════════════════════╝
+#
+# The settings live in .env (next to this file), so this file stays as it
+# is and `git pull` never collides with your changes. No NVIDIA GPU: see
+# COMPOSE_FILE in .env.example.
+
+services:
+  whisper-tm:
+    build: .
+    image: whisper-tm:local
+    container_name: whisper-tm
+    restart: unless-stopped
+    # The console log repeats the request lines; without a cap Docker keeps
+    # them all
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    ports:
+      # This machine only; WHISPER_TM_PORT=9860 publishes it to the network
+      - "${WHISPER_TM_PORT:-127.0.0.1:9860}:9860"
+
+    volumes:
+      # The library, read-only: transcripts go to the data volume
+      - ${MEDIA_DIR:-./media}:/media:ro
+      # config.yaml (written on the first start, the settings page saves
+      # it), the session key and the MCP token — keep the folder private
+      - ./config:/config
+      # Database, transcripts, work folder, uploads, chats, logs
+      - whisper-tm-data:/data
+      # Downloaded models (several GB) and caches
+      - whisper-tm-cache:/cache
+
+    environment:
+      # Speaker diarization: a Hugging Face token whose account accepted the
+      # conditions of pyannote/speaker-diarization-community-1 (docs/GUIDE.md:
+      # Speaker diarization: the Hugging Face token)
+      - HF_TOKEN=${HF_TOKEN:-}
+      # The user the server runs as; empty = the owner of ./config
+      - PUID=${PUID:-}
+      - PGID=${PGID:-}
+      - TZ=${TZ:-UTC}
+
+    # An LLM server on this machine (Ollama, llama.cpp) is reached as
+    # http://host.docker.internal:<port> (Settings → AI models)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  whisper-tm-data:
+    name: whisper-tm-data
+  whisper-tm-cache:
+    name: whisper-tm-cache
