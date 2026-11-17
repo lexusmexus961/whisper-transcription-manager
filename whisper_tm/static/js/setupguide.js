@@ -16,7 +16,7 @@ const SG_PAGES = [
     { id: 'speakers', icon: 'voices', label: 'Speaker diarization',
       intro: 'Telling speakers apart needs a free model from Hugging Face — set up once, with a token.' },
     { id: 'steps', icon: 'play', label: 'First steps',
-      intro: 'From the media folder to the first transcript — and what can be switched on later.' },
+      intro: 'From the library root to the first transcript — and what can be switched on later.' },
     { id: 'amd', icon: 'cpu', label: 'AMD GPU (experimental)', exp: true,
       intro: 'What is known about AMD cards — collected from public reports, not tested here.' },
     { id: 'docs', icon: 'book', label: 'Internal docs',
@@ -375,8 +375,13 @@ async function sgHfCheck() {
 }
 
 function sgSteps() {
-    return sgCard('1 · Media folder', `<p>Enter the folder with your recordings in the path field at the top (📂) — a local folder or a
-        mounted NAS share. The file list shows what is done and what is still open.</p>`)
+    return sgCard('1 · Library root', `<p>The library lives under <b>one</b> folder, the library root: a local folder or a
+        mounted NAS share. Every recording sits somewhere below it, at any depth, and the file list, the queue,
+        the statistics and the search all scale from it. A folder outside the root is not part of the library,
+        so choose the top folder that holds all your recordings, not one of its subfolders.</p>
+        <p><code>./setup.sh</code> asks for it (or <code>--library PATH</code>); later it is the path field at the
+        top (📂), and <code>directories.media</code> with <code>security.allowed_roots</code> in config.yaml.
+        Moving it to another machine or mount: <code>--remap-path</code>.</p>`)
     + sgCard('2 · Work folder', `<p>Temporary audio, separated vocals and chunks go to the work folder. A local SSD makes long files
         much faster: <b>${tbIcon('settings')} Settings → Folders</b>.</p>`)
     + sgCard('3 · Language', `<p>Whisper detects the language of every recording by itself. If your library is in one

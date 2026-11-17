@@ -254,24 +254,6 @@ body { font-family:var(--font-sans); background:var(--bg-0); color:var(--tx-1); 
 .qf-seg .qf-err .qf-count, .qf-seg .qf-cancel .qf-count,
 .qf-seg .qf-orphan .qf-count { color:var(--qf-c); }
 
-.qf-work { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
-.qf-work .qf-work-btn {
-    display:flex; align-items:center; justify-content:space-between; gap:8px;
-    padding:5px 10px; border:1px solid var(--border); border-radius:7px;
-    background:var(--bg-2); color:var(--tx-2); font-size:0.72rem;
-    transition:border-color 0.12s, color 0.12s;
-}
-.qf-work .qf-work-btn:hover { border-color:var(--border-h); color:var(--tx-1); }
-.qf-work .qf-count {
-    font-family:var(--font-mono); font-size:0.7rem; font-weight:600;
-    color:var(--tx-2); background:none; padding:0;
-}
-.qf-work .qf-work-btn.active { border-color:var(--accent); color:var(--accent); background:var(--accent-g); }
-.qf-work .qf-work-btn.active .qf-count { color:var(--accent); }
-/* LLM tasks running or waiting */
-.qf-work .qf-work-btn.llm-active { border-color:var(--accent); color:var(--accent); }
-.qf-work .qf-work-btn.llm-active .qf-count { color:var(--accent); }
-
 /* Directory progress panel — collapsed: percent, bar, time left;
    details (chips + index action) behind the header toggle. */
 .dir-stats {

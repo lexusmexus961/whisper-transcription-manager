@@ -1355,7 +1355,6 @@ function openLlmQueue() {
     }
     // The AI jobs of the Queue place
     if (typeof QueuePage !== 'undefined') QueuePage.open('llm');
-    else setFileTab('llm', document.getElementById('tabLlmQueueBtn'));
 }
 
 // Called by renderFileList() while the LLM tab is active. The same element
@@ -1549,7 +1548,7 @@ async function _lqPause(on) {
     _lqRender();
 }
 
-// Counter on the 🤖 LLM chip next to the queue tab: running + waiting tasks
+// Counter of open LLM tasks (running + waiting): the source of the rail's Queue badge
 let llmQueueSnap = null;
 async function llmQueueRefreshBadge() {
     try {
@@ -1563,9 +1562,6 @@ async function llmQueueRefreshBadge() {
         // The rail's Analyses badge: analysis jobs running or waiting
         el.dataset.analyses = (d.items || []).filter(i => i.kind === 'analysis'
             && (i.status === 'running' || i.status === 'pending')).length;
-        // If something is running, the chip glows like an active tab
-        document.getElementById('tabLlmQueueBtn')
-            ?.classList.toggle('llm-active', openJobs > 0);
     } catch (e) {}
 }
 setInterval(llmQueueRefreshBadge, 5000);

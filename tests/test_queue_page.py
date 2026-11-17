@@ -146,6 +146,9 @@ def test_the_queue_place_opens_on_jobs():
     sel = (STATIC / "js" / "library_select.js").read_text(encoding="utf-8")
     assert "qeShowTab('jobs')" in sel[sel.index("function openQueueEditorFromBar") :]
     assert 'id="qeTabJobs"' in HTML and 'id="qePaneJobs"' in HTML
-    # the sidebar's work chips open the Queue place instead of a list in the sidebar
-    assert 'onclick="QueuePage.open(\'tx\')" id="tabQueueBtn"' in HTML
-    assert 'id="tabLlmQueueBtn" onclick="QueuePage.open(\'llm\')"' in HTML
+    # the queue lives in the rail: the sidebar keeps only the hidden counters
+    # its badge reads (shell.js::badges), no chips of its own
+    assert 'id="tabQueueBtn"' not in HTML and 'id="tabLlmQueueBtn"' not in HTML
+    assert (
+        '<span hidden><span id="tabQueue">0</span><span id="llmQueueBadge">0</span></span>' in HTML
+    )

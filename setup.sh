@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ╔══════════════════════════════════════════════════════════════════════════╗
-# ║  Whisper Transcription Manager — Setup Script (Linux / macOS)           ║
+# ║  Whisper Transcription Manager — Setup Script (Linux)                   ║
 # ║                                                                         ║
 # ║  Builds a complete Python environment with:                             ║
 # ║  - uv (fast package manager) or pip as fallback                         ║
@@ -47,6 +47,7 @@ VENV_DIR=".venv"
 ASK_HF_TOKEN=true         # false = --no-hf-token
 PREFETCH=true             # false = --no-prefetch: the models download with the first job
 CHECK_SPACE=true          # false = --skip-space-check
+LIBRARY_DIR=""            # --library PATH: the library root, else asked
 
 # An option that takes a value must get one — with `set -u` a missing value
 # used to end the script with "unbound variable".
@@ -65,6 +66,7 @@ while [[ $# -gt 0 ]]; do
                          *) echo "--gpu takes nvidia, amd, cpu or apple, not \"$GPU_OVERRIDE\"" >&2; exit 1 ;;
                      esac ;;
         --no-uv)     USE_UV=false; shift ;;
+        --library)   need_value "$@"; LIBRARY_DIR="$2"; shift 2 ;;
         --dev)       INSTALL_DEV=true; shift ;;
         --llama)     SETUP_LLAMA=true; shift ;;
         --no-llama)  SETUP_LLAMA=false; shift ;;
@@ -85,6 +87,7 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --gpu nvidia|amd|cpu   force GPU type (default: auto)"
             echo "  --no-uv               use pip instead of uv"
+            echo "  --library PATH        the library root: the one folder all recordings live under"
             echo "  --dev                  install developer tools"
             echo "  --llama               install llama.cpp server (local LLM)"
             echo "  --no-llama            skip llama.cpp (no prompt)"
@@ -728,7 +731,46 @@ fi
 # ── Configuration ──────────────────────────────────────────────────────────
 step "Configuration"
 
+# The library root: ONE folder — local or a mounted share — that every
+# recording lives under, at any depth. The file list, queue, statistics and
+# search scale from it, and it becomes the allowed tree
+# (core/security.allowed_roots); a folder outside it is not part of the
+# library. Asked once, for a new config.yaml.
+ask_library() {
+    [[ -n "$LIBRARY_DIR" ]] && return 0
+    [[ -t 0 ]] || return 0
+    echo ""
+    echo "  Your library folder"
+    echo "  Everything the app manages lives under ONE folder, the library root:"
+    echo "  a local folder or a mounted NAS share. Subfolders of any depth are fine;"
+    echo "  the file list, the queue, the statistics and the search all scale from"
+    echo "  this root. Folders outside it are not part of the library, so choose the"
+    echo "  top folder that holds ALL your recordings (e.g. /mnt/nas/media), not one"
+    echo "  of its subfolders. Moving it later works (./start.sh --remap-path)."
+    echo ""
+    local _try
+    for _try in 1 2 3; do
+        read -r -p "  Library root (Enter = ~/Videos, choose later in the app): " LIBRARY_DIR || { echo; LIBRARY_DIR=""; }
+        [[ -z "$LIBRARY_DIR" ]] && return 0
+        LIBRARY_DIR="${LIBRARY_DIR/#\~/$HOME}"
+        [[ -d "$LIBRARY_DIR" ]] && return 0
+        warn "Not a folder here: $LIBRARY_DIR — is the share mounted?"
+        LIBRARY_DIR=""
+    done
+}
+
 if [[ ! -f "config.yaml" ]]; then
+    ask_library
+    if [[ -n "$LIBRARY_DIR" ]]; then
+        LIBRARY_DIR="${LIBRARY_DIR/#\~/$HOME}"
+        if [[ ! -d "$LIBRARY_DIR" ]]; then
+            err "--library: not a folder here: $LIBRARY_DIR"
+            exit 1
+        fi
+        LIBRARY_DIR="$(cd "$LIBRARY_DIR" && pwd -P)"
+    fi
+    # YAML single quotes: a quote inside is doubled
+    _lib_yaml="'${LIBRARY_DIR//\'/\'\'}'"
     # Only what differs from config.default.yaml (which documents every
     # setting) belongs in it: a full copy froze every default at this
     # version's value. It will hold the Hugging Face token and API keys —
@@ -738,10 +780,17 @@ if [[ ! -f "config.yaml" ]]; then
 # which documents every setting. The settings page saves into this file.
 
 directories:
-  # Your library — empty: $VIDEO_DIR or ~/Videos (~/Movies on macOS)
+  # Your library root — every recording lives under it, at any depth.
+  # Empty: $VIDEO_DIR or ~/Videos
   media: ""
 CFG
 )
+    if [[ -n "$LIBRARY_DIR" ]]; then
+        # The root is also the allowed tree: the library scales from it
+        # The heredoc's last line is the empty media entry: replace it
+        sed -i '/^  media: ""$/d' config.yaml
+        printf '  media: %s\nsecurity:\n  allowed_roots:\n  - %s\n' "$_lib_yaml" "$_lib_yaml" >> config.yaml
+    fi
     if [[ "$GPU_TYPE" == "cpu" ]]; then
         # Nothing is written for it: the app chooses what a CPU manages
         # by itself at every start (docs/GUIDE.md: Hardware Support), also in
@@ -750,7 +799,11 @@ CFG
     fi
     chmod 600 config.yaml
     ok "config.yaml created (your settings; config.default.yaml documents them all)"
-    info "Your library: directories.media in $SCRIPT_DIR/config.yaml (or choose it in the app)"
+    if [[ -n "$LIBRARY_DIR" ]]; then
+        ok "Library root: $LIBRARY_DIR"
+    else
+        info "Your library root: directories.media in $SCRIPT_DIR/config.yaml (or choose it in the app)"
+    fi
 else
     ok "config.yaml already exists"
 fi

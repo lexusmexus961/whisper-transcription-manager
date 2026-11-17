@@ -362,7 +362,7 @@ train a model that sounds like them.
 ```bash
 git clone https://github.com/lexusmexus961/whisper-transcription-manager.git
 cd whisper-transcription-manager
-./setup.sh          # detects your GPU, installs everything, asks for the HF token
+./setup.sh          # detects your GPU, installs everything, asks for your library root and the HF token
 ./start.sh          # then open http://localhost:9860
 ```
 

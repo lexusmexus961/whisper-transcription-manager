@@ -269,7 +269,6 @@ async function loadQueueEta(force = false) {
         if (r.ok && d && d.ok) queueEta = d;
     } catch (e) { /* server gone — keep the last answer */ }
     finally { _queueEtaBusy = false; _queueEtaAt = Date.now(); }
-    _queueTileTitle();
     if (activeTab === 'queue') renderQueueStats();
 }
 
@@ -282,19 +281,6 @@ function _finishText(ts) {
     if (days === 0) return `today ${time}`;
     if (days === 1) return `tomorrow ${time}`;
     return d.toLocaleDateString([], {weekday: 'short', day: 'numeric', month: 'short'}) + ' ' + time;
-}
-
-function _queueTileTitle() {
-    const btn = document.getElementById('tabQueueBtn');
-    if (!btn) return;
-    const d = queueEta;
-    let t = 'Files waiting in the transcription queue';
-    if (d && d.sec != null && d.pending) {
-        t += ` — ~${_dsLeft(d.sec)} left${d.partial ? '+' : ''}`
-           + (d.paused ? ' (paused)' : d.finish_at ? `, done ${_finishText(d.finish_at)}` : '')
-           + '. Click: the panel below shows the queue';
-    }
-    btn.title = t;
 }
 
 function renderQueueStats() {

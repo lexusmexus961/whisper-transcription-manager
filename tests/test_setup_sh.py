@@ -167,8 +167,7 @@ def test_the_setup_writes_no_values_for_the_machine(tmp_path, gpu):
     )
     script = (
         'set -euo pipefail\nok() { :; }; info() { echo "$1"; }\nSCRIPT_DIR=.; GPU_TYPE="$1"\n'
-        + block
-        + "\nfi\n"
+        'LIBRARY_DIR=""; ask_library() { :; }\n' + block + "\nfi\n"
     )
     done = subprocess.run(
         ["bash", "-c", script, "x", gpu], cwd=tmp_path, check=True, capture_output=True, text=True
@@ -178,3 +177,47 @@ def test_the_setup_writes_no_values_for_the_machine(tmp_path, gpu):
     assert ("Whisper turbo" in done.stdout) == (gpu == "cpu"), (
         "a CPU install is told what the app will start with"
     )
+
+
+def test_the_library_root_becomes_the_media_folder_and_the_allowed_tree(tmp_path):
+    """The library scales from ONE root: --library (or the question) writes it
+    as directories.media and as the only allowed tree — quoted, so a folder
+    name with a quote, an ampersand or a bar survives."""
+    import yaml
+
+    lib = tmp_path / "My Lib's & stuff|x"
+    lib.mkdir()
+    work = tmp_path / "app"
+    work.mkdir()
+    ask = _block("ask_library() {", '\nif [[ ! -f "config.yaml" ]]; then')
+    block = _block(
+        'if [[ ! -f "config.yaml" ]]; then', '\nelse\n    ok "config.yaml already exists"'
+    )
+    script = (
+        'set -euo pipefail\nok() { :; }; info() { :; }; warn() { :; }; err() { echo "$*" >&2; }\n'
+        'SCRIPT_DIR=.; GPU_TYPE=nvidia; LIBRARY_DIR="$1"\n' + ask + "\n" + block + "\nfi\n"
+    )
+    subprocess.run(
+        ["bash", "-c", script, "x", str(lib)],
+        cwd=work,
+        check=True,
+        capture_output=True,
+        text=True,
+        stdin=subprocess.DEVNULL,
+    )
+    cfg = yaml.safe_load((work / "config.yaml").read_text())
+    real = str(lib.resolve())
+    assert cfg["directories"]["media"] == real
+    assert cfg["security"]["allowed_roots"] == [real]
+
+    # Without a terminal and without --library nothing is asked or written
+    (work / "config.yaml").unlink()
+    subprocess.run(
+        ["bash", "-c", script, "x", ""],
+        cwd=work,
+        check=True,
+        capture_output=True,
+        text=True,
+        stdin=subprocess.DEVNULL,
+    )
+    assert set(yaml.safe_load((work / "config.yaml").read_text())) == {"directories"}

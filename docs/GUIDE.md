@@ -79,9 +79,9 @@ git clone https://github.com/lexusmexus961/whisper-transcription-manager.git && 
 chmod +x setup.sh
 ./setup.sh
 
-# Your library: choose it in the app (the path field at the top, on this
-# machine or with the login on), or set directories.media in config.yaml
-nano config.yaml
+# The setup asks for your library root: the ONE folder every recording
+# lives under (at any depth). Later: the path field at the top of the app,
+# or directories.media + security.allowed_roots in config.yaml
 
 # Start — then open http://localhost:9860
 ./start.sh
@@ -153,6 +153,7 @@ Neither way is tested on a real Windows machine yet.
 
 # Extras
 ./setup.sh --dev            # + pytest, ruff, mypy
+./setup.sh --library /mnt/nas/media   # the library root, without the question
 ./setup.sh --llama          # + llama.cpp server (local LLM); asks only before the model download
 ./setup.sh --no-llama       # Skip llama.cpp
 ./setup.sh --no-uv          # Use pip instead of uv

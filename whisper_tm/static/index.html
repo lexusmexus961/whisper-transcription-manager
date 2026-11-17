@@ -225,18 +225,9 @@
                     <span class="qf-count" id="tabOrphan">0</span><span class="qf-label">Orphans</span>
                 </button>
             </div>
-            <!-- Work in progress, not file states: both show their queue in
-                 place of the file list — one click switches between them. -->
-            <div class="qf-work">
-                <button class="qf-chip qf-work-btn" data-filter="queue" onclick="QueuePage.open('tx')" id="tabQueueBtn"
-                        title="Files waiting in the transcription queue">
-                    <span class="qf-label">⏳ Queue</span><span class="qf-count" id="tabQueue">0</span>
-                </button>
-                <button class="qf-chip qf-work-btn" data-filter="llm" id="tabLlmQueueBtn" onclick="QueuePage.open('llm')"
-                        title="LLM queue: summary, correction, translation — runs in parallel to transcription on the LLM server">
-                    <span class="qf-label">🤖 LLM</span><span class="qf-count" id="llmQueueBadge">0</span>
-                </button>
-            </div>
+            <!-- The queue lives in the rail now; these counters stay as the
+                 source of its badge and the Home cards (shell.js::badges). -->
+            <span hidden><span id="tabQueue">0</span><span id="llmQueueBadge">0</span></span>
         </div>
         <!-- Progress of the open folder. Collapsed: only progress and time
              left; the rest (sizes, speed, words, index) behind the toggle.
