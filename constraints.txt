@@ -5,7 +5,7 @@
 # requirements-lock-nvidia.txt.
 whisperx>=3.8,<3.9
 pyannote-audio<5
-transformers<5
+transformers<6
 audio-separator>=0.44,<0.45
 # librosa 1.0 no longer brings audioread, which audio-separator imports;
 # the app is tested on 0.11
