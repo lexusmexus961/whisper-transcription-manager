@@ -209,7 +209,7 @@ samplerate==0.1.0
 scikit-learn==1.9.1
 scipy==1.18.1
 secretstorage==3.5.0
-setuptools==84.0.0
+setuptools==84.1.0
 six==1.17.0
 sortedcontainers==2.4.0
 soundfile==0.14.0
