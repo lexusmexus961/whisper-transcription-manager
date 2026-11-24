@@ -37,7 +37,7 @@ beartype==0.18.5
 blinker==1.9.0
 cachetools==7.2.0
 caio==0.12.9
-certifi==2026.7.22
+certifi==2026.10.18
 cffi==2.1.1
 charset-normalizer==3.5.2
 click==8.5.0
