@@ -159,7 +159,7 @@ optuna==5.0.0
 packaging==26.3
 pandas==3.0.6
 pathable==0.5.0
-pillow==12.3.0
+pillow==13.0.0
 pip==26.2.1
 platformdirs==4.12.2
 playwright==1.61.0
