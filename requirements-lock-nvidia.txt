@@ -30,7 +30,7 @@ asteroid-filterbanks==0.4.0
 attrs==26.1.0
 audio-separator==0.44.3
 audioread==3.1.0
-authlib==1.8.0
+authlib==1.9.1
 av==18.0.0
 bcrypt==5.0.0
 beartype==0.18.5
